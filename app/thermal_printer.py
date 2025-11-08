@@ -443,11 +443,7 @@ def generar_lista_precios_escpos(productos):
         comando.extend(b'\x1B\x21\x00')
 
         regular = _formatear_monto_bs(producto.precio_regular)
-        minimo = _formatear_monto_bs(producto.precio_minimo)
-
-        comando.extend(f'   Precio regular: {regular}\n'.encode('utf-8'))
-        if producto.precio_minimo is not None and producto.precio_minimo != producto.precio_regular:
-            comando.extend(f'   Precio mínimo:  {minimo}\n'.encode('utf-8'))
+        comando.extend(f'   Precio: {regular}\n'.encode('utf-8'))
         comando.extend('\n'.encode('utf-8'))
 
     comando.extend(('-' * ancho_linea + '\n').encode('utf-8'))

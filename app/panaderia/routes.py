@@ -101,11 +101,7 @@ def api_lista_precios_texto():
 
         for producto in productos:
             precio_regular = _formatear_bs_texto(producto.precio_regular)
-            linea = f"🥖 {producto.nombre}: {precio_regular}"
-            if producto.precio_minimo is not None and producto.precio_minimo != producto.precio_regular:
-                precio_minimo = _formatear_bs_texto(producto.precio_minimo)
-                linea += f" (min: {precio_minimo})"
-            lineas.append(linea)
+            lineas.append(f"🥖 {producto.nombre}: {precio_regular}")
 
         lineas.append("")
         lineas.append("🧾 Generado desde SIIP Panadería")
