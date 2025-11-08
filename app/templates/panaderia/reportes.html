@@ -33,6 +33,9 @@
             <button type="button" class="btn btn-success" id="btnPrintPriceList">
                 <i class="fas fa-print"></i> Imprimir lista de precios
             </button>
+            <button type="button" class="btn btn-outline-primary" id="btnCopyPriceList">
+                <i class="fas fa-copy"></i> Copiar lista para WhatsApp
+            </button>
             <a href="{{ url_for('panaderia.index') }}" class="btn btn-secondary">Volver al Panel</a>
         </div>
     </div>
@@ -180,41 +183,84 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const priceListButton = document.getElementById('btnPrintPriceList');
-    if (!priceListButton) {
-        return;
+    const printButton = document.getElementById('btnPrintPriceList');
+    if (printButton) {
+        const originalPrintContent = printButton.innerHTML;
+        printButton.addEventListener('click', async function () {
+            printButton.disabled = true;
+            printButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+
+            try {
+                const response = await fetch('{{ url_for("panaderia.api_imprimir_lista_precios") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message || 'Lista de precios enviada a la impresora.');
+                } else {
+                    alert(data.error || data.message || 'No se pudo imprimir la lista de precios.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Ocurrió un error al comunicarse con la impresora.');
+            } finally {
+                printButton.disabled = false;
+                printButton.innerHTML = originalPrintContent;
+            }
+        });
     }
 
-    const originalContent = priceListButton.innerHTML;
+    const copyButton = document.getElementById('btnCopyPriceList');
+    if (copyButton) {
+        const originalCopyContent = copyButton.innerHTML;
+        copyButton.addEventListener('click', async function () {
+            copyButton.disabled = true;
+            copyButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Copiando...';
 
-    priceListButton.addEventListener('click', async function () {
-        priceListButton.disabled = true;
-        priceListButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+            try {
+                const response = await fetch('{{ url_for("panaderia.api_lista_precios_texto") }}');
+                const data = await response.json();
 
-        try {
-            const response = await fetch('{{ url_for("panaderia.api_imprimir_lista_precios") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
+                if (data.success && data.texto) {
+                    let copiado = false;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(data.texto);
+                        copiado = true;
+                    } else {
+                        const textoTemporal = document.createElement('textarea');
+                        textoTemporal.value = data.texto;
+                        textoTemporal.setAttribute('readonly', '');
+                        textoTemporal.style.position = 'absolute';
+                        textoTemporal.style.left = '-9999px';
+                        document.body.appendChild(textoTemporal);
+                        textoTemporal.select();
+                        copiado = document.execCommand('copy');
+                        document.body.removeChild(textoTemporal);
+                    }
 
-            const data = await response.json();
-
-            if (data.success) {
-                alert(data.message || 'Lista de precios enviada a la impresora.');
-            } else {
-                alert(data.error || data.message || 'No se pudo imprimir la lista de precios.');
+                    if (copiado) {
+                        alert('Lista de precios copiada al portapapeles.');
+                    } else {
+                        alert('No se pudo copiar automáticamente. Intenta de nuevo.');
+                    }
+                } else {
+                    alert(data.error || data.message || 'No se pudo generar la lista de precios.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Ocurrió un error al generar la lista de precios.');
+            } finally {
+                copyButton.disabled = false;
+                copyButton.innerHTML = originalCopyContent;
             }
-        } catch (error) {
-            console.error(error);
-            alert('Ocurrió un error al comunicarse con la impresora.');
-        } finally {
-            priceListButton.disabled = false;
-            priceListButton.innerHTML = originalContent;
-        }
-    });
+        });
+    }
 });
 </script>
 {% endblock %}

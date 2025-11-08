@@ -73,6 +73,49 @@ def reportes():
         produccion_reciente=produccion_reciente
     )
 
+def _formatear_bs_texto(valor):
+    try:
+        numero = float(valor or 0)
+    except (TypeError, ValueError):
+        numero = 0.0
+    monto = f"{numero:,.2f}"
+    if '.' in monto:
+        entero, decimal = monto.split('.')
+        return f"Bs. {entero.replace(',', '.')}," + decimal
+    return f"Bs. {monto.replace(',', '.')}"
+
+
+@panaderia_bp.route('/api/lista_precios_texto')
+@login_required
+def api_lista_precios_texto():
+    try:
+        productos = ProductoPanaderia.query.order_by(ProductoPanaderia.nombre.asc()).all()
+        if not productos:
+            return jsonify({'success': False, 'error': 'No hay productos disponibles.'}), 400
+
+        lineas = [
+            "📋 *Lista de precios actualizada*",
+            f"🗓️ {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+            ""
+        ]
+
+        for producto in productos:
+            precio_regular = _formatear_bs_texto(producto.precio_regular)
+            linea = f"🥖 {producto.nombre}: {precio_regular}"
+            if producto.precio_minimo is not None and producto.precio_minimo != producto.precio_regular:
+                precio_minimo = _formatear_bs_texto(producto.precio_minimo)
+                linea += f" (min: {precio_minimo})"
+            lineas.append(linea)
+
+        lineas.append("")
+        lineas.append("🧾 Generado desde SIIP Panadería")
+
+        texto = "\n".join(lineas)
+        return jsonify({'success': True, 'message': 'Lista de precios generada.', 'texto': texto})
+    except Exception as e:
+        current_app.logger.error(f"Error generando lista de precios texto: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': f'Error al generar lista de precios: {str(e)}'}), 500
+
 # --- Rutas para Productos ---
 @panaderia_bp.route('/productos', methods=['GET', 'POST'])
 @login_required
