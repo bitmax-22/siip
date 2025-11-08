@@ -20,6 +20,59 @@ from app.thermal_printer import imprimir_comanda, imprimir_lista_precios
 def index():
     return render_template('panaderia/index.html', title='Gestión de Panadería')
 
+
+@panaderia_bp.route('/reportes')
+@login_required
+def reportes():
+    total_ingresos = db.session.query(func.sum(VentaDiaria.precio_total_venta)).scalar() or 0.0
+    total_costo = db.session.query(func.sum(ProduccionDiaria.costo_total_produccion)).scalar() or 0.0
+    ganancia_bruta = total_ingresos - total_costo
+
+    ventas_por_vendedor = db.session.query(
+        Vendedor.nombre.label('nombre'),
+        func.coalesce(func.sum(VentaDiaria.precio_total_venta), 0).label('total_vendido'),
+        func.count(VentaDiaria.id).label('cantidad_ventas')
+    ).outerjoin(VentaDiaria).group_by(Vendedor.id).order_by(func.coalesce(func.sum(VentaDiaria.precio_total_venta), 0).desc()).all()
+
+    produccion_agrupada = db.session.query(
+        ProductoPanaderia.nombre,
+        func.coalesce(func.sum(ProduccionDiaria.cantidad_producida), 0).label('total_producido')
+    ).outerjoin(ProduccionDiaria).group_by(ProductoPanaderia.id).all()
+
+    ventas_agrupadas = db.session.query(
+        ProductoPanaderia.nombre,
+        func.coalesce(func.sum(VentaDiaria.cantidad_vendida), 0).label('total_vendido')
+    ).join(ProduccionDiaria, VentaDiaria.produccion_id == ProduccionDiaria.id)\
+     .join(ProductoPanaderia, ProduccionDiaria.producto_id == ProductoPanaderia.id)\
+     .group_by(ProductoPanaderia.id).all()
+
+    reporte_productos = {}
+    for prod in produccion_agrupada:
+        reporte_productos[prod.nombre] = {
+            'producido': int(prod.total_producido or 0),
+            'vendido': 0
+        }
+
+    for venta in ventas_agrupadas:
+        reporte_productos.setdefault(venta.nombre, {'producido': 0, 'vendido': 0})
+        reporte_productos[venta.nombre]['vendido'] = int(venta.total_vendido or 0)
+
+    produccion_reciente = ProduccionDiaria.query.order_by(
+        ProduccionDiaria.fecha_produccion.desc(),
+        ProduccionDiaria.id.desc()
+    ).limit(15).all()
+
+    return render_template(
+        'panaderia/reportes.html',
+        title='Reportes de Panadería',
+        total_ingresos=total_ingresos,
+        total_costo_produccion=total_costo,
+        ganancia_bruta=ganancia_bruta,
+        ventas_por_vendedor=ventas_por_vendedor,
+        reporte_productos=reporte_productos,
+        produccion_reciente=produccion_reciente
+    )
+
 # --- Rutas para Productos ---
 @panaderia_bp.route('/productos', methods=['GET', 'POST'])
 @login_required
