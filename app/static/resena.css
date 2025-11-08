@@ -1,0 +1,116 @@
+/* Estilos específicos para la página de Reseña Fotográfica */
+
+.reseña-body-styles {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image: linear-gradient(to right, #4b6cb7, #182848);
+    color: #e0e0e0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    width: 100%;
+    min-height: 100%;
+}
+
+.main-container {
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.reseña-body-styles h2,
+.reseña-body-styles h4,
+.reseña-body-styles h5 {
+    color: #ffffff;
+}
+
+.reseña-body-styles h2 {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.step-section {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.camera-section, .preview-section {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+#videoFeed {
+    width: 100%;
+    max-width: 480px;
+    min-height: 240px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: #000;
+}
+
+#videoFeed.highlight-capture {
+    border: 3px solid #4b6cb7;
+    box-shadow: 0 0 10px #4b6cb7;
+}
+
+.preview-image {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    border: 1px solid #555;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+#step3Verification .preview-image {
+    max-width: 250px;
+}
+
+.preview-container.active-preview .preview-image {
+    border: 2px solid #a0c4ff;
+}
+
+.btn-custom {
+    background-color: #4b6cb7;
+    border-color: #4b6cb7;
+    color: white;
+}
+
+.btn-custom:hover {
+    background-color: #3a558a;
+    border-color: #3a558a;
+}
+
+.reseña-body-styles .form-label {
+    color: #c0c0c0;
+}
+
+.reseña-body-styles .form-control {
+    background-color: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
+    color: #e0e0e0;
+}
+
+.reseña-body-styles .form-control:focus {
+    background-color: rgba(255,255,255,0.2);
+    border-color: #4b6cb7;
+    color: #e0e0e0;
+    box-shadow: 0 0 0 0.25rem rgba(75, 108, 183, 0.5);
+}
+
+.spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.reseña-body-styles .lead {
+    color: #d0d0d0;
+}
+
+

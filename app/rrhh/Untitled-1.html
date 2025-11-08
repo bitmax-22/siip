@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% from "_form_helpers.html" import render_field %}
+
+{% block title %}SIIP - {{ titulo }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .main-container {
+            padding-top: 76px;
+            padding-bottom: 40px;
+            background-image: linear-gradient(to right, #4b6cb7, #182848);
+            color: #e0e0e0;
+            min-height: calc(100vh - 56px);
+        }
+        .form-section {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+        .form-control, .form-select {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #e0e0e0;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: #4b6cb7;
+            color: #e0e0e0;
+            box-shadow: 0 0 0 0.25rem rgba(75, 108, 183, 0.5);
+        }
+        .form-label {
+            color: #a0c4ff;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-container px-lg-5">
+    <h2 class="text-white text-center mb-4">{{ titulo }}</h2>
+    <form method="POST" novalidate enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <!-- Sección Información Laboral -->
+        <div class="form-section">
+            <h4 class="mb-3 border-bottom pb-2">Información Laboral</h4>
+            <div class="row">
+                <div class="col-lg-4 col-md-6">{{ render_field(form.region, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-4 col-md-6">{{ render_field(form.estado_establecimiento, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-4 col-md-12">{{ render_field(form.nombre_establecimiento, attrs={'class': 'form-control'}) }}</div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12">{{ render_field(form.direccion_adscripcion, attrs={'class': 'form-control'}) }}</div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-lg-3 col-md-6">{{ render_field(form.fecha_ingreso_admon_publica, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-3 col-md-6">{{ render_field(form.fecha_ingreso_mppsp, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-3 col-md-6">{{ render_field(form.anos_servicio, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-3 col-md-6">{{ render_field(form.tipo_personal, attrs={'class': 'form-select'}) }}</div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">{{ render_field(form.cargo_adscripcion, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-md-6">{{ render_field(form.cargo_funcional, attrs={'class': 'form-control'}) }}</div>
+            </div>
+             <div class="row mt-3">
+                <div class="col-md-6">{{ render_field(form.grado_instruccion, attrs={'class': 'form-select'}) }}</div>
+                <div class="col-md-6">{{ render_field(form.profesion, attrs={'class': 'form-control'}) }}</div>
+            </div>
+        </div>
+
+        <!-- Sección Información Personal -->
+        <div class="form-section">
+            <h4 class="mb-3 border-bottom pb-2">Información Personal</h4>
+            <div class="row">
+                <div class="col-lg-5 col-md-12">{{ render_field(form.nombres, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-5 col-md-12">{{ render_field(form.apellidos, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-2 col-md-6">{{ render_field(form.cedula, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-2 col-md-6">{{ render_field(form.sexo, attrs={'class': 'form-select'}) }}</div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-lg-3 col-md-6">{{ render_field(form.fecha_nacimiento, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-3 col-md-6">{{ render_field(form.telefono, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-md-6">{{ render_field(form.correo_electronico, attrs={'class': 'form-control'}) }}</div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">{{ render_field(form.direccion_habitacion, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-md-6">{{ render_field(form.estado_residencia, attrs={'class': 'form-control'}) }}</div>
+            </div>
+        </div>
+        
+        <!-- Sección de Foto -->
+        <div class="form-section">
+            <h4 class="mb-3 border-bottom pb-2">Foto de Perfil</h4>
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p><strong>Opción 1: Tomar Foto con la Cámara</strong></p>
+                    <video id="video" width="320" height="240" autoplay style="border-radius: 8px;"></video>
+                    <button type="button" id="snap" class="btn btn-info mt-2">Tomar Foto</button>
+                    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+                    {{ form.foto_tomada() }}
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Opción 2: Cargar Archivo de Imagen</strong></p>
+                    {{ render_field(form.foto_subida, class="form-control") }}
+                    <hr>
+                    <p><strong>Vista Previa:</strong></p>
+                    <img id="preview" src="{{ url_for('static', filename='fotos_funcionarios/' + funcionario.foto_path if funcionario and funcionario.foto_path else 'resources/default_avatar.png') }}" alt="Vista previa" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección Tallas y Pago -->
+        <div class="form-section">
+            <h4 class="mb-3 border-bottom pb-2">Tallas y Datos de Pago</h4>
+            <div class="row">
+                <div class="col-lg-4 col-md-4 col-sm-12">{{ render_field(form.talla_camisa, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-4 col-md-4 col-sm-12">{{ render_field(form.talla_pantalon, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-4 col-md-4 col-sm-12">{{ render_field(form.talla_zapatos, attrs={'class': 'form-control'}) }}</div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-lg-4 col-md-12">{{ render_field(form.numero_cuenta, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-3 col-md-4">{{ render_field(form.pago_movil_banco, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-2 col-md-4">{{ render_field(form.pago_movil_cedula, attrs={'class': 'form-control'}) }}</div>
+                <div class="col-lg-3 col-md-4">{{ render_field(form.pago_movil_telefono, attrs={'class': 'form-control'}) }}</div>
+            </div>
+        </div>
+
+        <!-- Sección Estatus -->
+        <div class="form-section">
+            <h4 class="mb-3 border-bottom pb-2">Estatus y Observaciones</h4>
+            {{ render_field(form.observaciones_estatus, attrs={'class': 'form-control', 'rows': 3}) }}
+        </div>
+
+        <div class="text-center">
+            {% if funcionario_id %}
+                {{ form.submit(value="Actualizar Datos", class="btn btn-primary btn-lg") }}
+            {% else %}
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const snap = document.getElementById('snap');
+    const fotoTomadaField = document.getElementById('foto_tomada');
+    const fotoSubidaField = document.getElementById('foto_subida');
+    const preview = document.getElementById('preview');
+
+    // Acceder a la cámara
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+            video.srcObject = stream;
+            video.play();
+        }).catch(function(err) {
+            console.log("Error al acceder a la cámara: " + err);
+            // Opcional: deshabilitar la opción de tomar foto si hay un error
+            snap.disabled = true;
+            snap.textContent = "Cámara no disponible";
+        });
+    }
+
+    // Tomar la foto
+    snap.addEventListener("click", function() {
+        context.drawImage(video, 0, 0, 320, 240);
+        const dataURL = canvas.toDataURL('image/png');
+        fotoTomadaField.value = dataURL; // Guardar la imagen en base64 en el campo oculto
+        preview.src = dataURL; // Mostrar la foto tomada en la vista previa
+        fotoSubidaField.value = ""; // Limpiar el campo de subida de archivo para no enviar ambos
+        alert("Foto capturada. Se guardará al enviar el formulario.");
+    });
+
+    // Vista previa de la foto subida
+    fotoSubidaField.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                fotoTomadaField.value = ""; // Limpiar la foto tomada si se sube un archivo
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+});
+</script>
+{% endblock %}

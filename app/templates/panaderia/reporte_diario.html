@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte Diario de Panadería - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-chart-line"></i> Reporte Diario de Panadería</h1>
+        <a href="{{ url_for('panaderia.index') }}" class="btn btn-secondary">Volver al Panel</a>
+    </div>
+
+    {% if reporte %}
+    <div class="accordion" id="reporteAccordion">
+        {% for dia in reporte %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ loop.index }}">
+                <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="{% if loop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ loop.index }}">
+                    Reporte del Día: {{ dia.fecha }}
+                </button>
+            </h2>
+            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#reporteAccordion">
+                <div class="accordion-body">
+                    <h4 class="mt-3">Producción del Día</h4>
+                    <p>Total Producido: {{ dia.produccion.total_producido_dia }} unidades</p>
+                    <p>Costo Total Producción: Bs. {{ "%.2f"|format(dia.produccion.costo_total_dia) }}</p>
+                    {% if dia.produccion.productos %}
+                    <table class="table table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad Producida</th>
+                                <th>Costo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prod_nombre, prod_data in dia.produccion.productos.items() %}
+                            <tr>
+                                <td>{{ prod_nombre }}</td>
+                                <td>{{ prod_data.producido }}</td>
+                                <td>Bs. {{ "%.2f"|format(prod_data.costo) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>No hay datos de producción para este día.</p>
+                    {% endif %}
+
+                    <h4 class="mt-3">Ventas del Día</h4>
+                    <p>Total Vendido: {{ dia.ventas.total_vendido_dia }} unidades</p>
+                    <p>Ingreso Total Ventas: Bs. {{ "%.2f"|format(dia.ventas.ingreso_total_dia) }}</p>
+                    {% if dia.ventas.productos %}
+                    <table class="table table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad Vendida</th>
+                                <th>Ingreso</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prod_nombre, prod_data in dia.ventas.productos.items() %}
+                            <tr>
+                                <td>{{ prod_nombre }}</td>
+                                <td>{{ prod_data.vendido }}</td>
+                                <td>Bs. {{ "%.2f"|format(prod_data.ingreso) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>No hay datos de ventas para este día.</p>
+                    {% endif %}
+
+                    <h4 class="mt-3">Resumen Combinado por Producto</h4>
+                    {% if dia.productos_combinados %}
+                    <table class="table table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Producido</th>
+                                <th>Costo Producción</th>
+                                <th>Vendido</th>
+                                <th>Ingreso Ventas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prod_nombre, prod_data in dia.productos_combinados.items() %}
+                            <tr>
+                                <td>{{ prod_nombre }}</td>
+                                <td>{{ prod_data.producido }}</td>
+                                <td>Bs. {{ "%.2f"|format(prod_data.costo) }}</td>
+                                <td>{{ prod_data.vendido }}</td>
+                                <td>Bs. {{ "%.2f"|format(prod_data.ingreso) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>No hay datos combinados por producto para este día.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center">No hay datos de reportes disponibles.</p>
+    {% endif %}
+</div>
+{% endblock %}

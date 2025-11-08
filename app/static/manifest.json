@@ -1,0 +1,23 @@
+{
+  "name": "SIIP Asistente",
+  "short_name": "SIIP",
+  "description": "Sistema Integrado de Información Penitenciaria",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#182848",
+  "theme_color": "#4b6cb7", 
+  "icons": [
+    {
+      "src": "/static/resources/LOGO ACCESO.png",
+      "sizes": "192x192", 
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/resources/LOGO ACCESO.png",  
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

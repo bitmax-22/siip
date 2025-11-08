@@ -1,0 +1,87 @@
+================================================================================
+  SOLUCIÓN FINAL: Containers en MikroTik (RouterOS v7.16)
+================================================================================
+
+Android NO puede funcionar como subnet router.
+Vamos a usar containers en tu MikroTik hEX.
+
+================================================================================
+PASO 1: INSTALAR PAQUETE "EXTRA" EN WINBOX
+-------------------------------------------------------------------------------
+1. Winbox → System → Packages
+2. Check For Updates
+3. Busca "extra" o "extra-package"
+4. Download & Install
+
+O via Terminal:
+/system package update download-and-install extra-package
+
+ESPERA a que termine la instalación (puede tardar varios minutos)
+
+================================================================================
+PASO 2: HABILITAR CONTAINER MODE
+-------------------------------------------------------------------------------
+IMPORTANTE: El router se reiniciará automáticamente.
+
+Terminal de MikroTik:
+/system device-mode/update container=yes
+
+ESPERA 2-3 minutos a que el router reinicie
+
+================================================================================
+PASO 3: CONFIGURAR INTERFAZ VIRTUAL
+-------------------------------------------------------------------------------
+Después de que el router reinicie, ejecuta en Terminal:
+
+/interface/veth/add name=veth1 address=172.17.0.2/24 gateway=172.17.0.1
+/interface/bridge/add name=dockers
+/interface/bridge/port/add bridge=dockers interface=veth1
+/ip/address/add address=172.17.0.1/24 interface=dockers
+
+================================================================================
+PASO 4: CREAR CONTAINER DE TAILSCALE
+-------------------------------------------------------------------------------
+# Verificar que tengas espacio en USB o disco:
+/file print
+
+# Si NO tienes USB:
+# El root-dir debe ser en el disco interno:
+/container/add remote-image=tailscale/tailscale:latest interface=veth1 root-dir=tailscale hostname=tailscale start-on-boot=yes
+
+# Si SÍ tienes USB:
+# /container/add remote-image=tailscale/tailscale:latest interface=veth1 root-dir=usb1/tailscale hostname=tailscale start-on-boot=yes
+
+# Iniciar:
+/container/start tailscale
+
+# Ver estado:
+/container print
+
+================================================================================
+PASO 5: CONFIGURAR TAILSCALE
+-------------------------------------------------------------------------------
+# Ejecutar Tailscale dentro del container:
+/container/exec tailscale command="tailscale up --authkey=TU_AUTH_KEY --advertise-routes=192.168.88.0/24 --accept-routes"
+
+REEMPLAZA TU_AUTH_KEY con la auth key que generaste en Tailscale.
+
+================================================================================
+PASO 6: VERIFICAR EN DASHBOARD
+-------------------------------------------------------------------------------
+1. Abre: https://login.tailscale.com/admin/machines
+2. Deberías ver tu MikroTik con rutas 192.168.88.0/24
+
+================================================================================
+PASO 7: CONFIGURAR VPS
+-------------------------------------------------------------------------------
+En PowerShell del VPS:
+tailscale up --accept-routes
+
+Verificar:
+Test-Connection 192.168.88.128
+Test-NetConnection -ComputerName 192.168.88.128 -Port 9100
+
+================================================================================
+¡LISTO! ✅
+================================================================================
+

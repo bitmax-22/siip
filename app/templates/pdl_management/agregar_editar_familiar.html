@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if familiar else 'Agregar' }} Familiar{% endblock %}
+{% block styles %}
+    <style>
+        .pdl-page-wrapper {
+            background-color: #f4f4f4; /* Fondo gris claro */
+            color: #333; /* Color de texto oscuro */
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding-top: 56px; /* Para la navbar fija de base.html */
+        }
+        .pdl-content-container {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="pdl-page-wrapper">
+    <div class="container pdl-content-container">
+        <h3>{{ 'Editar' if familiar else 'Agregar' }} Familiar para {{ pdl.nombre_completo }}</h3>
+        <hr>
+        {% include '_flash_messages.html' %}
+        <form method="POST" action="{{ action_url }}">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="nombre_completo" class="form-label">Nombre Completo del Familiar <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="nombre_completo" name="nombre_completo" value="{{ request.form.nombre_completo or (form_data.nombre_completo if form_data else '') }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="cedula_familiar" class="form-label">Cédula del Familiar</label>
+                    <input type="text" class="form-control" id="cedula_familiar" name="cedula_familiar" value="{{ request.form.cedula_familiar or (form_data.cedula_familiar if form_data else '') }}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="parentesco" class="form-label">Parentesco <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="parentesco" name="parentesco" value="{{ request.form.parentesco or (form_data.parentesco if form_data else '') }}" required placeholder="Ej: Madre, Hermano, Cónyuge">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="telefono" class="form-label">Teléfono</label>
+                    <input type="text" class="form-control" id="telefono" name="telefono" value="{{ request.form.telefono or (form_data.telefono if form_data else '') }}">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="direccion" class="form-label">Dirección</label>
+                <textarea class="form-control" id="direccion" name="direccion" rows="2">{{ request.form.direccion or (form_data.direccion if form_data else '') }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="ultima_visita_fecha" class="form-label">Fecha de Última Visita</label>
+                <input type="date" class="form-control" id="ultima_visita_fecha" name="ultima_visita_fecha" value="{{ request.form.ultima_visita_fecha or (form_data.ultima_visita_fecha if form_data else '') }}">
+                <small class="form-text text-muted">Formato: YYYY-MM-DD. Dejar en blanco si no aplica.</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> {{ 'Actualizar' if familiar else 'Guardar' }} Familiar
+            </button>
+            <a href="{{ url_for('pdl_management.manage_familiares', pdl_id=pdl.id) }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

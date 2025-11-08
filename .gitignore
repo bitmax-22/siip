@@ -1,0 +1,21 @@
+.env
+__pycache__/
+*.pyc
+
+# Bases de datos y almacenes locales
+siip_database.db
+*.sqlite3
+chroma_db/
+app/vector_store/
+
+# Archivos generados y respaldos pesados
+reports/
+app/photos/
+app/chat/temp_backups/
+
+# Archivos y llaves sensibles
+*.conf
+.env
+
+# Vínculos temporales o accesos directos
+*.lnk

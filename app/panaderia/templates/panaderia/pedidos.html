@@ -1,0 +1,1628 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block styles %}
+<style>
+    /* Ocultar navegación superior para tablet */
+    body {
+        padding-top: 0 !important;
+    }
+    .navbar {
+        display: none !important;
+    }
+    
+    /* Estilos optimizados para tablet Android */
+    .pedidos-container {
+        max-width: 100%;
+        padding: 5px;
+        margin-top: 0;
+    }
+    
+    .productos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .producto-card {
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: white;
+    }
+    
+    .producto-card:hover {
+        border-color: #007bff;
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+    }
+    
+    .producto-card.selected {
+        border-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .precio-display {
+        font-size: 1em;
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .items-carrito {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 10px;
+        min-height: 80px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .item-carrito {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px;
+        margin: 3px 0;
+        background: white;
+        border-radius: 4px;
+    }
+    
+    .btn-quantity {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: none;
+        font-size: 1em;
+        font-weight: bold;
+    }
+    
+    .cantidad-display {
+        font-size: 1em;
+        font-weight: bold;
+        margin: 0 10px;
+    }
+    
+    .total-display {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #28a745;
+        text-align: center;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .btn-action-large {
+        min-height: 45px;
+        font-size: 1.1em;
+        font-weight: bold;
+        border-radius: 8px;
+    }
+    
+    .info-cliente {
+        background: white;
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .mensaje-exito, .mensaje-error {
+        display: none;
+        padding: 8px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        font-size: 0.9em;
+        text-align: center;
+    }
+    
+    /* Optimizar encabezados de cards */
+    .card-header h4, .card-header h5 {
+        font-size: 1em;
+        margin: 0;
+    }
+    
+    /* Reducir padding de card-body */
+    .card-body {
+        padding: 10px !important;
+    }
+    
+    /* Optimizar tabla de pedidos */
+    .table {
+        font-size: 0.85em;
+    }
+    
+    .mensaje-exito {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .mensaje-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid pedidos-container">
+    <!-- Título compacto -->
+    <h4 class="mb-2 text-center fw-bold">{{ title }}</h4>
+    
+    <!-- Mensajes de estado -->
+    <div id="mensajeExito" class="mensaje-exito"></div>
+    <div id="mensajeError" class="mensaje-error"></div>
+    
+    <!-- Pestañas compactas -->
+    <ul class="nav nav-tabs mb-2" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-nuevo-pedido" data-bs-toggle="tab" data-bs-target="#nuevo-pedido" type="button" role="tab">
+                <i class="fas fa-plus-circle"></i> Nuevo Pedido
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-listar-pedidos" data-bs-toggle="tab" data-bs-target="#listar-pedidos" type="button" role="tab">
+                <i class="fas fa-list"></i> Gestionar Pedidos
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Contenido de pestañas -->
+    <div class="tab-content">
+        <!-- Pestaña: Nuevo Pedido -->
+        <div class="tab-pane fade show active" id="nuevo-pedido" role="tabpanel">
+            <div class="row">
+        <!-- Columna izquierda: Productos -->
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white py-2">
+                    <h5 class="mb-0"><i class="fas fa-bread-slice"></i> Productos Disponibles</h5>
+                </div>
+                <div class="card-body">
+                    <div id="productosGrid" class="productos-grid">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin fa-3x"></i>
+                            <p>Cargando productos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Columna derecha: Carrito y cliente -->
+        <div class="col-lg-5">
+            <!-- Información del cliente -->
+            <div class="card shadow-sm mb-2">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center py-2">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> Cliente</h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-light me-1" id="btnAgregarCliente" data-bs-toggle="modal" data-bs-target="#modalAgregarCliente">
+                            <i class="fas fa-plus"></i> Agregar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light" id="btnGestionarClientes" data-bs-toggle="modal" data-bs-target="#modalGestionarClientes">
+                            <i class="fas fa-users-cog"></i> Gestionar
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body info-cliente">
+                    <div class="mb-3">
+                        <label for="clienteSelect" class="form-label">Seleccionar Cliente *</label>
+                        <select class="form-select form-select-lg" id="clienteSelect" required>
+                            <option value="">-- Seleccione un cliente --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fechaPedido" class="form-label">Fecha de Pedido *</label>
+                        <input type="date" class="form-control form-control-lg" id="fechaPedido" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="observaciones" class="form-label">Observaciones (Opcional)</label>
+                        <textarea class="form-control" id="observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Carrito -->
+            <div class="card shadow-sm mb-2">
+                <div class="card-header bg-warning text-dark py-2">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Pedido</h5>
+                </div>
+                <div class="card-body">
+                    <div id="itemsCarrito" class="items-carrito">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+                            <p>No hay productos en el carrito</p>
+                        </div>
+                    </div>
+                    
+                    <div class="total-display">
+                        Total: <span id="totalPedido">0.00</span> Bs.
+                    </div>
+                    
+                    <button id="btnConfirmarPedido" class="btn btn-success btn-action-large w-100 mb-2" disabled>
+                        <i class="fas fa-check-circle"></i> Confirmar Pedido
+                    </button>
+                    <button id="btnLimpiarCarrito" class="btn btn-secondary btn-action-large w-100">
+                        <i class="fas fa-trash"></i> Limpiar Carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- Pestaña: Listar Pedidos -->
+        <div class="tab-pane fade" id="listar-pedidos" role="tabpanel">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center py-2">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Historial de Pedidos</h5>
+                    <div>
+                        <button class="btn btn-sm btn-warning me-2" id="btnCambioMasivoEstado" onclick="mostrarModalCambioEstadoMasivo()" disabled>
+                            <i class="fas fa-tasks"></i> Cambiar Estado Masivo
+                        </button>
+                        <button class="btn btn-sm btn-light" id="btnRefreshPedidos">
+                            <i class="fas fa-sync-alt"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="row mb-2">
+                        <div class="col-md-2">
+                            <label for="filtroEstado" class="form-label mb-1">Filtrar por Estado</label>
+                            <select class="form-select form-select-sm" id="filtroEstado">
+                                <option value="">Todos</option>
+                                <option value="CONFIRMADO">Confirmado</option>
+                                <option value="ENTREGADO_PAGADO">Entregado - Pagado</option>
+                                <option value="ENTREGADO_NO_PAGADO">Entregado - No Pagado</option>
+                                <option value="CANCELADO">Cancelado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filtroCliente" class="form-label mb-1">Cliente</label>
+                            <select class="form-select form-select-sm" id="filtroCliente">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filtroFechaInicio" class="form-label mb-1">Fecha Desde</label>
+                            <input type="date" class="form-control form-control-sm" id="filtroFechaInicio">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filtroFechaFin" class="form-label mb-1">Fecha Hasta</label>
+                            <input type="date" class="form-control form-control-sm" id="filtroFechaFin">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-sm btn-secondary w-100" onclick="limpiarFiltrosFecha()">
+                                <i class="fas fa-times"></i> Limpiar Fechas
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabla de pedidos -->
+                    <div id="tablaPedidosContainer">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin fa-3x"></i>
+                            <p>Cargando pedidos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Agregar Cliente -->
+<div class="modal fade" id="modalAgregarCliente" tabindex="-1" aria-labelledby="modalAgregarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAgregarClienteLabel">
+                    <i class="fas fa-user-plus"></i> Agregar Nuevo Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAgregarCliente">
+                    <div class="mb-3">
+                        <label for="nuevoClienteNombre" class="form-label">Nombre del Cliente *</label>
+                        <input type="text" class="form-control" id="nuevoClienteNombre" placeholder="Ingrese nombre completo" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nuevoClienteTelefono" class="form-label">Teléfono</label>
+                        <input type="tel" class="form-control" id="nuevoClienteTelefono" placeholder="Ej: 0424-1234567">
+                    </div>
+                    <div class="mb-3">
+                        <label for="nuevoClienteDireccion" class="form-label">Dirección</label>
+                        <textarea class="form-control" id="nuevoClienteDireccion" rows="2" placeholder="Dirección del cliente"></textarea>
+                    </div>
+                    <hr>
+                    <h6 class="mb-2">Tipo de Precio</h6>
+                    <div class="mb-2">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="clientePrecioRegular" checked>
+                            <label class="form-check-label" for="clientePrecioRegular">Precio Regular</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="clientePrecioMinimo">
+                            <label class="form-check-label" for="clientePrecioMinimo">Precio Mínimo</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="clientePrecioRegalia">
+                            <label class="form-check-label" for="clientePrecioRegalia">Regalía (Gratis)</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarCliente">
+                    <i class="fas fa-save"></i> Guardar Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Gestionar Clientes -->
+<div class="modal fade" id="modalGestionarClientes" tabindex="-1" aria-labelledby="modalGestionarClientesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalGestionarClientesLabel">
+                    <i class="fas fa-users-cog"></i> Gestionar Clientes
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="tablaClientesContainer">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-3x"></i>
+                        <p>Cargando clientes...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Editar Cliente -->
+<div class="modal fade" id="modalEditarCliente" tabindex="-1" aria-labelledby="modalEditarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarClienteLabel">
+                    <i class="fas fa-user-edit"></i> Editar Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarCliente">
+                    <input type="hidden" id="editClienteId">
+                    <div class="mb-3">
+                        <label for="editClienteNombre" class="form-label">Nombre del Cliente *</label>
+                        <input type="text" class="form-control" id="editClienteNombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editClienteTelefono" class="form-label">Teléfono</label>
+                        <input type="tel" class="form-control" id="editClienteTelefono">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editClienteDireccion" class="form-label">Dirección</label>
+                        <textarea class="form-control" id="editClienteDireccion" rows="2"></textarea>
+                    </div>
+                    <hr>
+                    <h6 class="mb-2">Tipo de Precio</h6>
+                    <div class="mb-2">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="editClientePrecioRegular">
+                            <label class="form-check-label" for="editClientePrecioRegular">Precio Regular</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="editClientePrecioMinimo">
+                            <label class="form-check-label" for="editClientePrecioMinimo">Precio Mínimo</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="editClientePrecioRegalia">
+                            <label class="form-check-label" for="editClientePrecioRegalia">Regalía (Gratis)</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarEdicionCliente()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ver Pedido -->
+<div class="modal fade" id="modalVerPedido" tabindex="-1" aria-labelledby="modalVerPedidoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalVerPedidoLabel">
+                    <i class="fas fa-eye"></i> Detalles del Pedido
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="contenidoPedido">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-3x"></i>
+                        <p>Cargando...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Cambiar Estado del Pedido -->
+<div class="modal fade" id="modalCambioEstado" tabindex="-1" aria-labelledby="modalCambioEstadoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalCambioEstadoLabel">
+                    <i class="fas fa-edit"></i> Cambiar Estado del Pedido
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <p class="mb-2"><strong>Pedido:</strong> <span id="cambioEstadoNumeroPedido"></span></p>
+                    <p class="mb-3"><strong>Estado actual:</strong> <span id="cambioEstadoActual" class="badge"></span></p>
+                </div>
+                <div>
+                    <label class="form-label fw-bold">Seleccione el nuevo estado:</label>
+                    <div id="cambioEstadoBotones" class="d-grid gap-2">
+                        <!-- Los botones se generarán dinámicamente -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Cambiar Estado Masivo de Pedidos -->
+<div class="modal fade" id="modalCambioEstadoMasivo" tabindex="-1" aria-labelledby="modalCambioEstadoMasivoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modalCambioEstadoMasivoLabel">
+                    <i class="fas fa-tasks"></i> Cambiar Estado Masivo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <p class="mb-2"><strong>Pedidos seleccionados:</strong> <span id="cambioMasivoCantidad" class="badge bg-info"></span></p>
+                    <p class="text-muted small">Se cambiará el estado de todos los pedidos seleccionados al mismo estado.</p>
+                </div>
+                <div>
+                    <label class="form-label fw-bold">Seleccione el nuevo estado para todos:</label>
+                    <div id="cambioMasivoEstadoBotones" class="d-grid gap-2">
+                        <!-- Los botones se generarán dinámicamente -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let productos = [];
+let carrito = [];
+let clientes = [];
+
+// Cargar productos al iniciar
+async function cargarProductos() {
+    try {
+        const response = await fetch("{{ url_for('panaderia.api_productos_disponibles') }}");
+        const data = await response.json();
+        
+        if (data.success) {
+            productos = data.productos;
+            mostrarProductos();
+        } else {
+            mostrarError('Error al cargar productos');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión al cargar productos');
+    }
+}
+
+// Cargar clientes disponibles
+async function cargarClientes() {
+    try {
+        const response = await fetch("{{ url_for('panaderia.api_clientes_disponibles') }}");
+        const data = await response.json();
+        
+        if (data.success) {
+            clientes = data.clientes;
+            mostrarClientes();
+        } else {
+            mostrarError('Error al cargar clientes');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión al cargar clientes');
+    }
+}
+
+function mostrarClientes() {
+    const select = document.getElementById('clienteSelect');
+    
+    if (clientes.length === 0) {
+        select.innerHTML = '<option value="">-- No hay clientes registrados --</option>';
+        return;
+    }
+    
+    select.innerHTML = '<option value="">-- Seleccione un cliente --</option>' +
+        clientes.map(cliente => 
+            `<option value="${cliente.id}">${cliente.nombre}${cliente.telefono ? ' - ' + cliente.telefono : ''}</option>`
+        ).join('');
+}
+
+// Agregar nuevo cliente
+async function agregarCliente() {
+    const nombre = document.getElementById('nuevoClienteNombre').value.trim();
+    const telefono = document.getElementById('nuevoClienteTelefono').value.trim();
+    const direccion = document.getElementById('nuevoClienteDireccion').value.trim();
+    const precio_regular = document.getElementById('clientePrecioRegular').checked;
+    const precio_minimo = document.getElementById('clientePrecioMinimo').checked;
+    const precio_regalia = document.getElementById('clientePrecioRegalia').checked;
+    
+    if (!nombre) {
+        mostrarError('El nombre del cliente es obligatorio');
+        return;
+    }
+    
+    try {
+        const response = await fetch("{{ url_for('panaderia.api_crear_cliente') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre, telefono, direccion, precio_regular, precio_minimo, precio_regalia })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalAgregarCliente'));
+            modal.hide();
+            
+            // Limpiar formulario
+            document.getElementById('formAgregarCliente').reset();
+            
+            // Recargar clientes y seleccionar el nuevo
+            await cargarClientes();
+            document.getElementById('clienteSelect').value = data.cliente_id;
+            
+            mostrarExito('Cliente agregado exitosamente');
+        } else {
+            mostrarError(data.error || 'Error al agregar cliente');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión al agregar cliente');
+    }
+}
+
+function mostrarProductos() {
+    const grid = document.getElementById('productosGrid');
+    
+    if (productos.length === 0) {
+        grid.innerHTML = '<div class="text-center text-muted"><p>No hay productos disponibles</p></div>';
+        return;
+    }
+    
+    grid.innerHTML = productos.map(producto => `
+        <div class="producto-card" onclick="agregarAlCarrito(${producto.id})">
+            <strong>${producto.nombre}</strong>
+            <div class="precio-display mt-2">${formatearMonto(producto.precio_regular)} Bs.</div>
+        </div>
+    `).join('');
+}
+
+function agregarAlCarrito(productoId) {
+    const producto = productos.find(p => p.id === productoId);
+    if (!producto) return;
+    
+    // Obtener cliente seleccionado
+    const clienteId = document.getElementById('clienteSelect').value;
+    const cliente = clientes.find(c => c.id == clienteId);
+    
+    // Determinar precio según tipo de cliente
+    let precio_aplicar = producto.precio_regular;
+    if (cliente) {
+        if (cliente.precio_regalia) {
+            precio_aplicar = 0;
+        } else if (cliente.precio_minimo) {
+            precio_aplicar = producto.precio_minimo;
+        } else {
+            precio_aplicar = producto.precio_regular;
+        }
+    }
+    
+    const itemExistente = carrito.findIndex(item => item.producto_id === productoId);
+    
+    if (itemExistente >= 0) {
+        carrito[itemExistente].cantidad++;
+    } else {
+        carrito.push({
+            producto_id: producto.id,
+            producto_nombre: producto.nombre,
+            precio_unitario: precio_aplicar,
+            cantidad: 1
+        });
+    }
+    
+    actualizarCarrito();
+}
+
+function actualizarCantidad(indice, cambio) {
+    carrito[indice].cantidad += cambio;
+    
+    if (carrito[indice].cantidad <= 0) {
+        carrito.splice(indice, 1);
+    }
+    
+    actualizarCarrito();
+}
+
+function cambiarCantidadDirecta(indice, nuevoValor) {
+    const cantidad = parseInt(nuevoValor);
+    
+    if (isNaN(cantidad) || cantidad < 1) {
+        actualizarCarrito(); // Recargar para mostrar el valor anterior
+        mostrarError('La cantidad debe ser un número mayor a 0');
+        return;
+    }
+    
+    carrito[indice].cantidad = cantidad;
+    actualizarCarrito();
+}
+
+function actualizarCarrito() {
+    const container = document.getElementById('itemsCarrito');
+    const btnConfirmar = document.getElementById('btnConfirmarPedido');
+    
+    if (carrito.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-shopping-cart fa-3x mb-2"></i>
+                <p>No hay productos en el carrito</p>
+            </div>
+        `;
+        document.getElementById('totalPedido').textContent = formatearMonto(0);
+        btnConfirmar.disabled = true;
+        return;
+    }
+    
+    btnConfirmar.disabled = false;
+    
+    container.innerHTML = carrito.map((item, index) => `
+        <div class="item-carrito">
+            <div>
+                <strong>${item.producto_nombre}</strong><br>
+                <small class="text-muted">${formatearMonto(item.precio_unitario)} Bs. c/u</small>
+            </div>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-outline-danger btn-quantity" onclick="actualizarCantidad(${index}, -1)">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <input type="number" class="cantidad-input form-control mx-2" 
+                    value="${item.cantidad}" min="1" 
+                    onchange="cambiarCantidadDirecta(${index}, this.value)"
+                    style="width: 80px; text-align: center;">
+                <button class="btn btn-outline-success btn-quantity" onclick="actualizarCantidad(${index}, 1)">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="ms-3">
+                <strong class="text-success">${formatearMonto(item.cantidad * item.precio_unitario)} Bs.</strong>
+            </div>
+        </div>
+    `).join('');
+    
+    const total = carrito.reduce((sum, item) => sum + (item.cantidad * item.precio_unitario), 0);
+    document.getElementById('totalPedido').textContent = formatearMonto(total);
+}
+
+function limpiarCarrito() {
+    if (carrito.length === 0) return;
+    
+    if (confirm('¿Limpiar todo el carrito?')) {
+        carrito = [];
+        actualizarCarrito();
+    }
+}
+
+async function confirmarPedido() {
+    const clienteId = document.getElementById('clienteSelect').value;
+    const fechaPedido = document.getElementById('fechaPedido').value;
+    
+    if (!clienteId) {
+        mostrarError('Por favor seleccione un cliente');
+        return;
+    }
+    
+    if (!fechaPedido) {
+        mostrarError('Por favor seleccione una fecha');
+        return;
+    }
+    
+    if (carrito.length === 0) {
+        mostrarError('El pedido debe contener al menos un producto');
+        return;
+    }
+    
+    // Deshabilitar botón mientras procesa
+    const btnConfirmar = document.getElementById('btnConfirmarPedido');
+    btnConfirmar.disabled = true;
+    btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    
+    try {
+        const pedidoData = {
+            cliente_id: parseInt(clienteId),
+            fecha_pedido: fechaPedido,
+            observaciones: document.getElementById('observaciones').value.trim() || null,
+            items: carrito
+        };
+        
+        const response = await fetch("{{ url_for('panaderia.api_crear_pedido') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(pedidoData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            let mensaje = `Pedido ${data.numero_pedido} creado exitosamente`;
+            
+            // Verificar estado de impresión
+            if (data.impresion) {
+                if (data.impresion.success) {
+                    if (data.impresion.fallback_pdf) {
+                        mensaje += '\n⚠ No se conectó a la impresora. Se generó PDF.';
+                        // Descargar PDF automáticamente
+                        if (data.pdf_url) {
+                            window.open(data.pdf_url, '_blank');
+                        }
+                    } else {
+                        mensaje += '\n✓ Comanda impresa correctamente';
+                    }
+                } else if (data.impresion.skipped) {
+                    mensaje += '\nⓘ Impresora deshabilitada';
+                } else {
+                    mensaje += `\n⚠ Atención: ${data.impresion.error || 'Error al imprimir'}`;
+                }
+            }
+            
+            mostrarExito(mensaje);
+            
+            // Limpiar formulario
+            carrito = [];
+            actualizarCarrito();
+            document.getElementById('clienteSelect').value = '';
+            document.getElementById('observaciones').value = '';
+            // Reestablecer fecha actual
+            const fechaInput = document.getElementById('fechaPedido');
+            if (fechaInput) {
+                const hoy = new Date();
+                const year = hoy.getFullYear();
+                const month = String(hoy.getMonth() + 1).padStart(2, '0');
+                const day = String(hoy.getDate()).padStart(2, '0');
+                fechaInput.value = `${year}-${month}-${day}`;
+            }
+        } else {
+            mostrarError(data.error || 'Error al crear pedido');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión al crear pedido');
+    } finally {
+        btnConfirmar.disabled = false;
+        btnConfirmar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Pedido';
+    }
+}
+
+async function imprimirComanda(pedidoId) {
+    // La impresión se realiza automáticamente al crear el pedido
+    console.log('Pedido creado, verificar impresión en respuesta del servidor');
+}
+
+function mostrarExito(mensaje) {
+    const div = document.getElementById('mensajeExito');
+    div.textContent = mensaje;
+    div.style.display = 'block';
+    setTimeout(() => {
+        div.style.display = 'none';
+    }, 3000);
+}
+
+function mostrarError(mensaje) {
+    const div = document.getElementById('mensajeError');
+    div.textContent = mensaje;
+    div.style.display = 'block';
+    setTimeout(() => {
+        div.style.display = 'none';
+    }, 5000);
+}
+
+// Función para formatear montos con separadores de miles
+function formatearMonto(monto) {
+    return parseFloat(monto).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Event listener para modal de gestión de clientes
+const modalGestionar = document.getElementById('modalGestionarClientes');
+if (modalGestionar) {
+    modalGestionar.addEventListener('shown.bs.modal', cargarClientesGestion);
+}
+
+// Función para cargar clientes en modal de gestión
+async function cargarClientesGestion() {
+    const container = document.getElementById('tablaClientesContainer');
+    container.innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p>Cargando clientes...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch("{{ url_for('panaderia.api_clientes_disponibles') }}?todos=true");
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarTablaClientes(data.clientes);
+        } else {
+            container.innerHTML = '<div class="alert alert-danger">Error al cargar clientes</div>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = '<div class="alert alert-danger">Error de conexión</div>';
+    }
+}
+
+// Función para mostrar tabla de clientes
+function mostrarTablaClientes(clientesLista) {
+    const container = document.getElementById('tablaClientesContainer');
+    
+    if (clientesLista.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No hay clientes registrados</div>';
+        return;
+    }
+    
+    let html = '<div class="table-responsive"><table class="table table-striped table-hover">';
+    html += '<thead class="table-dark"><tr>';
+    html += '<th>ID</th>';
+    html += '<th>Nombre</th>';
+    html += '<th>Teléfono</th>';
+    html += '<th>Dirección</th>';
+    html += '<th>Acciones</th>';
+    html += '</tr></thead><tbody>';
+    
+    clientesLista.forEach(cliente => {
+        html += '<tr>';
+        html += `<td>${cliente.id}</td>`;
+        html += `<td><strong>${cliente.nombre}</strong></td>`;
+        html += `<td>${cliente.telefono || '-'}</td>`;
+        html += `<td>${cliente.direccion || '-'}</td>`;
+        html += '<td>';
+        html += `<button class="btn btn-sm btn-primary me-1" onclick="abrirModalEditarCliente(${cliente.id}, '${cliente.nombre}', '${cliente.telefono || ''}', '${(cliente.direccion || '').replace(/'/g, '\\\'')}', ${cliente.precio_regular}, ${cliente.precio_minimo}, ${cliente.precio_regalia})">`;
+        html += '<i class="fas fa-edit"></i> Editar</button>';
+        html += `<button class="btn btn-sm btn-danger" onclick="eliminarCliente(${cliente.id}, '${cliente.nombre}')">`;
+        html += '<i class="fas fa-trash"></i> Eliminar</button>';
+        html += '</td>';
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+// Función para abrir modal de edición
+function abrirModalEditarCliente(id, nombre, telefono, direccion, precio_regular, precio_minimo, precio_regalia) {
+    document.getElementById('editClienteId').value = id;
+    document.getElementById('editClienteNombre').value = nombre;
+    document.getElementById('editClienteTelefono').value = telefono;
+    document.getElementById('editClienteDireccion').value = direccion;
+    document.getElementById('editClientePrecioRegular').checked = precio_regular;
+    document.getElementById('editClientePrecioMinimo').checked = precio_minimo;
+    document.getElementById('editClientePrecioRegalia').checked = precio_regalia;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalEditarCliente'));
+    modal.show();
+}
+
+// Función para guardar edición del cliente
+async function guardarEdicionCliente() {
+    const id = document.getElementById('editClienteId').value;
+    const nombre = document.getElementById('editClienteNombre').value.trim();
+    const telefono = document.getElementById('editClienteTelefono').value.trim();
+    const direccion = document.getElementById('editClienteDireccion').value.trim();
+    const precio_regular = document.getElementById('editClientePrecioRegular').checked;
+    const precio_minimo = document.getElementById('editClientePrecioMinimo').checked;
+    const precio_regalia = document.getElementById('editClientePrecioRegalia').checked;
+    
+    if (!nombre) {
+        mostrarError('El nombre del cliente es obligatorio');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/panaderia/api/editar_cliente/${id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nombre: nombre,
+                telefono: telefono,
+                direccion: direccion,
+                precio_regular: precio_regular,
+                precio_minimo: precio_minimo,
+                precio_regalia: precio_regalia
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarCliente'));
+            modal.hide();
+            
+            mostrarExito(data.message || 'Cliente actualizado exitosamente');
+            cargarClientesGestion();
+            cargarClientes(); // Recargar dropdown
+        } else {
+            mostrarError(data.error || 'Error al actualizar cliente');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión');
+    }
+}
+
+// Función para eliminar cliente
+async function eliminarCliente(id, nombre) {
+    if (!confirm(`¿Está seguro de eliminar el cliente "${nombre}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/panaderia/api/eliminar_cliente/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarExito(data.message || 'Cliente eliminado exitosamente');
+            cargarClientesGestion();
+            cargarClientes(); // Recargar dropdown
+        } else {
+            mostrarError(data.error || 'Error al eliminar cliente');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión');
+    }
+}
+
+// Event listeners
+document.getElementById('btnConfirmarPedido').addEventListener('click', confirmarPedido);
+document.getElementById('btnLimpiarCarrito').addEventListener('click', limpiarCarrito);
+document.getElementById('btnGuardarCliente').addEventListener('click', agregarCliente);
+
+// Cargar productos y clientes al iniciar
+document.addEventListener('DOMContentLoaded', () => {
+    cargarProductos();
+    cargarClientes();
+    cargarClientesFiltro(); // Cargar clientes para el filtro
+    
+    // Establecer fecha actual por defecto
+    const fechaInput = document.getElementById('fechaPedido');
+    if (fechaInput) {
+        const hoy = new Date();
+        const year = hoy.getFullYear();
+        const month = String(hoy.getMonth() + 1).padStart(2, '0');
+        const day = String(hoy.getDate()).padStart(2, '0');
+        fechaInput.value = `${year}-${month}-${day}`;
+    }
+    
+    // Establecer fechas por defecto (hoy) para filtros de gestión
+    function setFechasFiltroHoySiVacias() {
+        const hoy = new Date();
+        const year = hoy.getFullYear();
+        const month = String(hoy.getMonth() + 1).padStart(2, '0');
+        const day = String(hoy.getDate()).padStart(2, '0');
+        const hoyStr = `${year}-${month}-${day}`;
+        const filtroFechaInicio = document.getElementById('filtroFechaInicio');
+        const filtroFechaFin = document.getElementById('filtroFechaFin');
+        if (filtroFechaInicio && !filtroFechaInicio.value) filtroFechaInicio.value = hoyStr;
+        if (filtroFechaFin && !filtroFechaFin.value) filtroFechaFin.value = hoyStr;
+    }
+    
+    // Al cargar, si estamos en la pestaña de gestionar, fijar fechas a hoy
+    setFechasFiltroHoySiVacias();
+    
+    // Limpiar carrito al cambiar de cliente
+    const clienteSelect = document.getElementById('clienteSelect');
+    if (clienteSelect) {
+        clienteSelect.addEventListener('change', () => {
+            if (carrito.length > 0) {
+                if (confirm('¿Limpiar el carrito al cambiar de cliente?')) {
+                    carrito = [];
+                    actualizarCarrito();
+                }
+            }
+        });
+    }
+    
+    // Cargar pedidos si se está en la pestaña de gestión
+    const tabListar = document.getElementById('tab-listar-pedidos');
+    if (tabListar) {
+        tabListar.addEventListener('shown.bs.tab', () => {
+            // Al abrir la pestaña de gestionar: fijar fechas a hoy si están vacías y cargar
+            setFechasFiltroHoySiVacias();
+            cargarPedidos();
+        });
+    }
+    
+    // Filtrar pedidos por estado
+    const filtroEstado = document.getElementById('filtroEstado');
+    if (filtroEstado) {
+        filtroEstado.addEventListener('change', cargarPedidos);
+    }
+    
+    // Filtrar pedidos por cliente
+    const filtroCliente = document.getElementById('filtroCliente');
+    if (filtroCliente) {
+        filtroCliente.addEventListener('change', cargarPedidos);
+    }
+    
+    // Filtrar pedidos por fecha
+    const filtroFechaInicio = document.getElementById('filtroFechaInicio');
+    if (filtroFechaInicio) {
+        filtroFechaInicio.addEventListener('change', cargarPedidos);
+    }
+    
+    const filtroFechaFin = document.getElementById('filtroFechaFin');
+    if (filtroFechaFin) {
+        filtroFechaFin.addEventListener('change', cargarPedidos);
+    }
+    
+    // Botón refresh
+    const btnRefresh = document.getElementById('btnRefreshPedidos');
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', cargarPedidos);
+    }
+});
+
+// Función para cargar clientes en el filtro
+async function cargarClientesFiltro() {
+    try {
+        const response = await fetch("{{ url_for('panaderia.api_clientes_disponibles') }}");
+        const data = await response.json();
+        
+        if (data.success) {
+            const select = document.getElementById('filtroCliente');
+            select.innerHTML = '<option value="">Todos</option>' +
+                data.clientes.map(cliente => 
+                    `<option value="${cliente.id}">${cliente.nombre}</option>`
+                ).join('');
+        }
+    } catch (error) {
+        console.error('Error cargando clientes para filtro:', error);
+    }
+}
+
+// Función para cargar lista de pedidos
+async function cargarPedidos() {
+    const container = document.getElementById('tablaPedidosContainer');
+    const filtroEstado = document.getElementById('filtroEstado').value;
+    const filtroCliente = document.getElementById('filtroCliente').value;
+    const filtroFechaInicio = document.getElementById('filtroFechaInicio').value;
+    const filtroFechaFin = document.getElementById('filtroFechaFin').value;
+    
+    container.innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p>Cargando pedidos...</p>
+        </div>
+    `;
+    
+    try {
+        let url = '{{ url_for("panaderia.api_listar_pedidos") }}';
+        const params = new URLSearchParams();
+        
+        if (filtroEstado) {
+            params.append('estado', filtroEstado);
+        }
+        if (filtroCliente) {
+            params.append('cliente_id', filtroCliente);
+        }
+        if (filtroFechaInicio) {
+            params.append('fecha_inicio', filtroFechaInicio);
+        }
+        if (filtroFechaFin) {
+            params.append('fecha_fin', filtroFechaFin);
+        }
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarTablaPedidos(data.pedidos);
+        } else {
+            container.innerHTML = '<div class="alert alert-danger">Error al cargar pedidos</div>';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        container.innerHTML = '<div class="alert alert-danger">Error de conexión</div>';
+    }
+}
+
+// Función para limpiar filtros de fecha
+function limpiarFiltrosFecha() {
+    document.getElementById('filtroFechaInicio').value = '';
+    document.getElementById('filtroFechaFin').value = '';
+    cargarPedidos();
+}
+
+// Función para mostrar tabla de pedidos
+function mostrarTablaPedidos(pedidos) {
+    const container = document.getElementById('tablaPedidosContainer');
+    
+    if (pedidos.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No hay pedidos registrados</div>';
+        return;
+    }
+    
+    let html = '<div class="table-responsive"><table class="table table-striped table-hover">';
+    html += '<thead class="table-dark"><tr>';
+    html += '<th width="40"><input type="checkbox" id="checkTodos" onclick="seleccionarTodosPedidos()" title="Seleccionar todos"></th>';
+    html += '<th>Nº Pedido</th>';
+    html += '<th>Cliente</th>';
+    html += '<th>Fecha</th>';
+    html += '<th>Estado</th>';
+    html += '<th>Total</th>';
+    html += '<th>Acciones</th>';
+    html += '</tr></thead><tbody>';
+    
+    pedidos.forEach(pedido => {
+        html += '<tr>';
+        html += `<td><input type="checkbox" class="checkbox-pedido" value="${pedido.id}" onchange="actualizarBotonCambioMasivo()"></td>`;
+        html += `<td><strong>${pedido.numero_pedido}</strong></td>`;
+        html += `<td>${pedido.cliente_nombre}</td>`;
+        html += `<td>${pedido.fecha_pedido}</td>`;
+        
+        // Color según estado
+        let badgeColor = 'secondary';
+        if (pedido.estado === 'CONFIRMADO') badgeColor = 'info';
+        else if (pedido.estado === 'ENTREGADO_PAGADO') badgeColor = 'success';
+        else if (pedido.estado === 'ENTREGADO_NO_PAGADO') badgeColor = 'warning';
+        else if (pedido.estado === 'CANCELADO') badgeColor = 'danger';
+        
+        html += `<td><span class="badge bg-${badgeColor}">${pedido.estado}</span></td>`;
+        html += `<td><strong>${formatearMonto(pedido.total)} Bs.</strong></td>`;
+        html += '<td>';
+        html += `<button class="btn btn-sm btn-primary me-1" onclick="mostrarModalCambioEstado(${pedido.id}, '${pedido.estado}')">`;
+        html += '<i class="fas fa-edit"></i> Cambiar Estado</button>';
+        html += `<button class="btn btn-sm btn-secondary me-1" onclick="verPedidoEnPantalla(${pedido.id})">`;
+        html += '<i class="fas fa-eye"></i> Ver</button>';
+        html += `<button class="btn btn-sm btn-info" onclick="reimprimirComanda(${pedido.id})">`;
+        html += '<i class="fas fa-print"></i> Reimprimir</button>';
+        html += '</td>';
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+// Funciones para selección múltiple de pedidos
+function seleccionarTodosPedidos() {
+    const checkTodos = document.getElementById('checkTodos');
+    const checkboxes = document.querySelectorAll('.checkbox-pedido');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checkTodos.checked;
+    });
+    actualizarBotonCambioMasivo();
+}
+
+function actualizarBotonCambioMasivo() {
+    const checkboxes = document.querySelectorAll('.checkbox-pedido:checked');
+    const btnCambioMasivo = document.getElementById('btnCambioMasivoEstado');
+    if (checkboxes.length > 0) {
+        btnCambioMasivo.disabled = false;
+    } else {
+        btnCambioMasivo.disabled = true;
+    }
+    
+    // Actualizar el checkbox "seleccionar todos"
+    const checkTodos = document.getElementById('checkTodos');
+    if (checkTodos) {
+        const totalCheckboxes = document.querySelectorAll('.checkbox-pedido');
+        checkTodos.checked = totalCheckboxes.length > 0 && checkboxes.length === totalCheckboxes.length;
+    }
+}
+
+function obtenerPedidosSeleccionados() {
+    const checkboxes = document.querySelectorAll('.checkbox-pedido:checked');
+    return Array.from(checkboxes).map(cb => parseInt(cb.value));
+}
+
+// Variable para almacenar el ID del pedido actual
+let pedidoIdActual = null;
+
+// Función para mostrar opciones de cambio de estado
+async function mostrarModalCambioEstado(pedidoId, estadoActual) {
+    pedidoIdActual = pedidoId;
+    
+    const estadosDisponibles = {
+        'CONFIRMADO': ['ENTREGADO_PAGADO', 'ENTREGADO_NO_PAGADO', 'CANCELADO'],
+        'ENTREGADO_PAGADO': ['ENTREGADO_NO_PAGADO', 'CANCELADO'], // Permitir corrección de errores
+        'ENTREGADO_NO_PAGADO': ['ENTREGADO_PAGADO', 'CANCELADO'],
+        'CANCELADO': [] // Estado final, no se puede cambiar
+    };
+    
+    const estados = estadosDisponibles[estadoActual] || [];
+    
+    if (estados.length === 0) {
+        alert('Este pedido ya está en el estado final.');
+        return;
+    }
+    
+    // Obtener el número de pedido desde la lista actual
+    let numeroPedido = `PED-${pedidoId}`;
+    try {
+        const listaResponse = await fetch(`{{ url_for("panaderia.api_listar_pedidos") }}`);
+        const listaData = await listaResponse.json();
+        if (listaData.success) {
+            const pedidoEnLista = listaData.pedidos.find(p => p.id === pedidoId);
+            if (pedidoEnLista) {
+                numeroPedido = pedidoEnLista.numero_pedido;
+            }
+        }
+    } catch (error) {
+        console.error('Error obteniendo número de pedido:', error);
+    }
+    
+    // Configurar el modal
+    document.getElementById('cambioEstadoNumeroPedido').textContent = numeroPedido;
+    
+    // Mostrar estado actual con color
+    const estadoActualBadge = document.getElementById('cambioEstadoActual');
+    let badgeColor = 'secondary';
+    let estadoTexto = estadoActual;
+    
+    // Traducir estados a texto más amigable
+    const estadosTexto = {
+        'CONFIRMADO': 'Confirmado',
+        'ENTREGADO_PAGADO': 'Entregado - Pagado',
+        'ENTREGADO_NO_PAGADO': 'Entregado - No Pagado',
+        'CANCELADO': 'Cancelado'
+    };
+    
+    if (estadoActual === 'CONFIRMADO') badgeColor = 'info';
+    else if (estadoActual === 'ENTREGADO_PAGADO') badgeColor = 'success';
+    else if (estadoActual === 'ENTREGADO_NO_PAGADO') badgeColor = 'warning';
+    else if (estadoActual === 'CANCELADO') badgeColor = 'danger';
+    
+    estadoActualBadge.textContent = estadosTexto[estadoActual] || estadoActual;
+    estadoActualBadge.className = `badge bg-${badgeColor}`;
+    
+    // Generar botones para cada estado disponible
+    const contenedorBotones = document.getElementById('cambioEstadoBotones');
+    contenedorBotones.innerHTML = '';
+    
+    estados.forEach((estado) => {
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'btn btn-lg';
+        
+        // Estilos según el estado
+        if (estado === 'ENTREGADO_PAGADO') {
+            boton.className += ' btn-success';
+            boton.innerHTML = '<i class="fas fa-check-circle"></i> Entregado - Pagado';
+        } else if (estado === 'ENTREGADO_NO_PAGADO') {
+            boton.className += ' btn-warning';
+            boton.innerHTML = '<i class="fas fa-exclamation-circle"></i> Entregado - No Pagado';
+        } else if (estado === 'CANCELADO') {
+            boton.className += ' btn-danger';
+            boton.innerHTML = '<i class="fas fa-times-circle"></i> Cancelado';
+        } else {
+            boton.className += ' btn-primary';
+            boton.innerHTML = `<i class="fas fa-edit"></i> ${estadosTexto[estado] || estado}`;
+        }
+        
+        boton.onclick = () => {
+            cambiarEstadoPedido(pedidoId, estado);
+        };
+        
+        contenedorBotones.appendChild(boton);
+    });
+    
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('modalCambioEstado'));
+    modal.show();
+}
+
+// Función para cambiar estado
+async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
+    try {
+        const response = await fetch(`{{ url_for('panaderia.api_cambiar_estado_pedido', pedido_id=0) }}`.replace('0', pedidoId), {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ estado: nuevoEstado })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Traducir estado a texto amigable
+            const estadosTexto = {
+                'CONFIRMADO': 'Confirmado',
+                'ENTREGADO_PAGADO': 'Entregado - Pagado',
+                'ENTREGADO_NO_PAGADO': 'Entregado - No Pagado',
+                'CANCELADO': 'Cancelado'
+            };
+            const estadoTexto = estadosTexto[nuevoEstado] || nuevoEstado;
+            
+            // Cerrar el modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCambioEstado'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            mostrarExito(`Estado cambiado a: ${estadoTexto}`);
+            cargarPedidos();
+        } else {
+            mostrarError(data.error || 'Error al cambiar estado');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión');
+    }
+}
+
+// Función para mostrar modal de cambio masivo de estado
+function mostrarModalCambioEstadoMasivo() {
+    const pedidosSeleccionados = obtenerPedidosSeleccionados();
+    
+    if (pedidosSeleccionados.length === 0) {
+        mostrarError('No hay pedidos seleccionados');
+        return;
+    }
+    
+    // Mostrar cantidad de pedidos seleccionados
+    document.getElementById('cambioMasivoCantidad').textContent = pedidosSeleccionados.length;
+    
+    // Generar botones para todos los estados posibles
+    const contenedorBotones = document.getElementById('cambioMasivoEstadoBotones');
+    contenedorBotones.innerHTML = '';
+    
+    const estadosDisponibles = [
+        { valor: 'CONFIRMADO', texto: 'Confirmado', icono: 'fa-edit', color: 'primary' },
+        { valor: 'ENTREGADO_PAGADO', texto: 'Entregado - Pagado', icono: 'fa-check-circle', color: 'success' },
+        { valor: 'ENTREGADO_NO_PAGADO', texto: 'Entregado - No Pagado', icono: 'fa-exclamation-circle', color: 'warning' },
+        { valor: 'CANCELADO', texto: 'Cancelado', icono: 'fa-times-circle', color: 'danger' }
+    ];
+    
+    estadosDisponibles.forEach(estado => {
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = `btn btn-lg btn-${estado.color}`;
+        boton.innerHTML = `<i class="fas ${estado.icono}"></i> ${estado.texto}`;
+        boton.onclick = () => {
+            cambiarEstadoPedidoMasivo(pedidosSeleccionados, estado.valor);
+        };
+        contenedorBotones.appendChild(boton);
+    });
+    
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('modalCambioEstadoMasivo'));
+    modal.show();
+}
+
+// Función para cambiar estado de múltiples pedidos
+async function cambiarEstadoPedidoMasivo(pedidosIds, nuevoEstado) {
+    // Traducir estado a texto amigable
+    const estadosTexto = {
+        'CONFIRMADO': 'Confirmado',
+        'ENTREGADO_PAGADO': 'Entregado - Pagado',
+        'ENTREGADO_NO_PAGADO': 'Entregado - No Pagado',
+        'CANCELADO': 'Cancelado'
+    };
+    const estadoTexto = estadosTexto[nuevoEstado] || nuevoEstado;
+    
+    if (!confirm(`¿Está seguro de cambiar el estado de ${pedidosIds.length} pedido(s) a "${estadoTexto}"?`)) {
+        return;
+    }
+    
+    let exitosos = 0;
+    let fallidos = 0;
+    
+    // Procesar cada pedido
+    for (const pedidoId of pedidosIds) {
+        try {
+            const response = await fetch(`{{ url_for('panaderia.api_cambiar_estado_pedido', pedido_id=0) }}`.replace('0', pedidoId), {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ estado: nuevoEstado })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                exitosos++;
+            } else {
+                fallidos++;
+            }
+        } catch (error) {
+            console.error(`Error cambiando estado del pedido ${pedidoId}:`, error);
+            fallidos++;
+        }
+    }
+    
+    // Cerrar el modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCambioEstadoMasivo'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Mostrar resultado
+    if (fallidos === 0) {
+        mostrarExito(`Estado cambiado exitosamente para ${exitosos} pedido(s): ${estadoTexto}`);
+    } else {
+        mostrarError(`Se cambiaron ${exitosos} pedido(s) exitosamente, pero ${fallidos} fallaron.`);
+    }
+    
+    // Recargar la lista de pedidos
+    cargarPedidos();
+}
+
+// Función para reimprimir comanda
+async function reimprimirComanda(pedidoId) {
+    try {
+        const response = await fetch(`{{ url_for('panaderia.api_reimprimir_comanda', pedido_id=0) }}`.replace('0', pedidoId), {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarExito('Comanda reimpresa exitosamente');
+        } else if (data.skipped) {
+            mostrarError('Impresora deshabilitada');
+        } else {
+            mostrarError(data.error || 'Error al reimprimir');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error de conexión');
+    }
+}
+
+// Función para ver pedido en pantalla
+async function verPedidoEnPantalla(pedidoId) {
+    try {
+        // Usar api_datos_impresion para obtener el pedido directamente por ID
+        const response = await fetch(`{{ url_for("panaderia.api_datos_impresion", pedido_id=0) }}`.replace('0', pedidoId));
+        const data = await response.json();
+        
+        if (!data.success) {
+            mostrarError(data.error || 'Error al cargar el pedido');
+            return;
+        }
+        
+        const pedido = data.pedido;
+        
+        // Mostrar datos del pedido
+        const contenidoPedido = document.getElementById('contenidoPedido');
+        let html = '<div class="row">';
+        
+        // Información del pedido
+        html += '<div class="col-md-6 mb-3">';
+        html += '<h6 class="text-primary"><i class="fas fa-file-invoice"></i> Información del Pedido</h6>';
+        html += '<table class="table table-sm table-bordered">';
+        html += `<tr><th width="40%">Número:</th><td><strong>${pedido.numero_pedido}</strong></td></tr>`;
+        html += `<tr><th>Cliente:</th><td>${pedido.cliente.nombre}</td></tr>`;
+        html += `<tr><th>Teléfono:</th><td>${pedido.cliente.telefono || '-'}</td></tr>`;
+        html += `<tr><th>Fecha:</th><td>${pedido.fecha_pedido}</td></tr>`;
+        
+        // Color según estado
+        let badgeColor = 'secondary';
+        if (pedido.estado === 'CONFIRMADO') badgeColor = 'info';
+        else if (pedido.estado === 'ENTREGADO_PAGADO') badgeColor = 'success';
+        else if (pedido.estado === 'ENTREGADO_NO_PAGADO') badgeColor = 'warning';
+        else if (pedido.estado === 'CANCELADO') badgeColor = 'danger';
+        
+        html += `<tr><th>Estado:</th><td><span class="badge bg-${badgeColor}">${pedido.estado}</span></td></tr>`;
+        html += '</table>';
+        html += '</div>';
+        
+        // Productos del pedido
+        html += '<div class="col-md-6 mb-3">';
+        html += '<h6 class="text-primary"><i class="fas fa-box"></i> Productos</h6>';
+        html += '<div class="table-responsive">';
+        html += '<table class="table table-sm table-striped">';
+        html += '<thead class="table-secondary"><tr>';
+        html += '<th>Producto</th>';
+        html += '<th class="text-center">Cant.</th>';
+        html += '<th class="text-end">Precio</th>';
+        html += '<th class="text-end">Subtotal</th>';
+        html += '</tr></thead><tbody>';
+        
+        pedido.items.forEach(item => {
+            html += '<tr>';
+            html += `<td>${item.nombre}</td>`;
+            html += `<td class="text-center">${item.cantidad}</td>`;
+            html += `<td class="text-end">${formatearMonto(item.precio_unitario)}</td>`;
+            html += `<td class="text-end">${formatearMonto(item.subtotal)}</td>`;
+            html += '</tr>';
+        });
+        
+        html += '</tbody><tfoot class="table-secondary">';
+        html += '<tr>';
+        html += '<th colspan="3" class="text-end">TOTAL:</th>';
+        html += `<th class="text-end"><strong>${formatearMonto(pedido.total)} Bs.</strong></th>`;
+        html += '</tr>';
+        html += '</tfoot></table>';
+        html += '</div>';
+        html += '</div>';
+        
+        // Observaciones
+        if (pedido.observaciones) {
+            html += '<div class="col-12 mb-3">';
+            html += '<h6 class="text-primary"><i class="fas fa-sticky-note"></i> Observaciones</h6>';
+            html += `<p class="bg-light p-2 rounded">${pedido.observaciones}</p>`;
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        contenidoPedido.innerHTML = html;
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalVerPedido'));
+        modal.show();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error al cargar el pedido');
+    }
+}
+</script>
+{% endblock %}
+

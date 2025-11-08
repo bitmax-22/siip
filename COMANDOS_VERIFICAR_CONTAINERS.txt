@@ -1,0 +1,31 @@
+================================================================================
+  COMANDOS PARA VERIFICAR CONTAINERS EN MIKROTIK ROUTEROS v7.16
+================================================================================
+
+En Terminal de MikroTik (Winbox → Terminal), ejecuta:
+
+1. VERIFICAR SI CONTAINERS YA ESTÁ INSTALADO:
+/system package print
+
+# Si ves "container" en la lista → Ya está instalado ✅
+# Si NO ves "container" → Necesitas instalarlo
+
+---------------------------------------------------------------------
+
+2. VERIFICAR VERSIÓN EXACTA:
+/system resource print
+
+---------------------------------------------------------------------
+
+3. VER TODOS LOS PAQUETES DISPONIBLES PARA INSTALAR:
+/system package update print
+
+---------------------------------------------------------------------
+
+4. VER SI CONTAINER MODE YA ESTÁ HABILITADO:
+/system device-mode/print
+
+# Si ves "container" → Ya está habilitado ✅
+
+================================================================================
+

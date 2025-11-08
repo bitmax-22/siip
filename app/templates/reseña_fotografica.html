@@ -1,0 +1,608 @@
+{% extends "base.html" %}
+
+{% block title %}SIIP - Reseña Fotográfica{% endblock %}
+
+{% block styles %}
+    <link rel="icon" type="image/png" href="{{ url_for('chat.serve_resource', filename='LOGO MSP.png') }}">
+    <!-- CSS específico de Reseña Fotográfica -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='resena.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="reseña-body-styles">
+        <div class="container main-container"> 
+        {# El padding-top para la navbar fija ya está manejado por el <main> en base.html, y ahora por .reseña-body-styles #}
+        <h2>Reseña Fotográfica</h2>
+
+        <!-- Botón para reporte de PDLs sin foto -->
+        <div class="row mb-3">
+            <div class="col-md-12 text-end">
+                <button id="btnReporteSinFoto" class="btn btn-info">
+                    <i class="fas fa-search"></i> Ver PDLs sin Foto
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenedor para mensajes de estado generales (MOVIDO AQUÍ) -->
+        <div class="row mt-2 mb-3">
+            <div class="col-md-12" id="generalStatusMessage">
+            </div>
+        </div>
+
+        <!-- Paso 1: Ingreso de Cédula -->
+        <div id="step1Cedula" class="step-section">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <h4>Paso 1: Identificación del PDL</h4>
+                    <div class="mb-3">
+                        <label for="cedulaInput" class="form-label">Número de Cédula del PDL:</label>
+                        <input type="text" class="form-control" id="cedulaInput" placeholder="Ej: V-12345678 o E-87654321">
+                    </div>
+                    <button id="startCaptureButton" class="btn btn-primary btn-lg w-100">Comenzar Reseña Fotográfica</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 2: Captura de Fotos -->
+        <div id="step2Capture" class="step-section" style="display:none;">
+            <h4>Paso 2: Captura de Fotografías</h4>
+            <p class="lead">Cédula: <strong id="displayCedula"></strong></p>
+            <div class="row">
+                <div class="col-md-7">
+                    <div class="camera-section text-center">
+                        <p id="nextPhotoIndicator" class="lead mb-2">Esperando cédula...</p>
+                        <video id="videoFeed" autoplay playsinline></video>
+                        <canvas id="photoCanvas" style="display:none;"></canvas>
+                        <div class="mt-3">
+                            <button id="captureButton" class="btn btn-lg btn-custom" disabled>Tomar Foto</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="preview-section">
+                        <h5>Previsualizaciones Rápidas</h5>
+                        <div class="row text-center">
+                            <div class="col-4 preview-container" id="previewContainerFrontal">
+                                <small>Frontal</small>
+                                <img id="previewFrontal" src="#" alt="Frontal" class="preview-image" style="display:none;">
+                            </div>
+                            <div class="col-4 preview-container" id="previewContainerDerecho">
+                                <small>Lado Derecho</small>
+                                <img id="previewDerecho" src="#" alt="Derecho" class="preview-image" style="display:none;">
+                            </div>
+                            <div class="col-4 preview-container" id="previewContainerIzquierdo">
+                                <small>Lado Izquierdo</small>
+                                <img id="previewIzquierdo" src="#" alt="Izquierdo" class="preview-image" style="display:none;">
+                            </div>
+                        </div>
+                        <button id="goToVerificationButton" class="btn btn-info w-100 mt-3" style="display:none;">Verificar Fotos</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 3: Verificación y Guardado -->
+        <div id="step3Verification" class="step-section" style="display:none;">
+            <h4>Paso 3: Verificación y Guardado</h4>
+            <p class="lead">Cédula: <strong id="verificationCedula"></strong></p>
+            <div class="preview-section">
+                <div class="mb-3">
+                    <div class="row text-center">
+                        <div class="col-md-4 col-sm-12 preview-container mb-3" id="previewContainerFrontalVerify">
+                            <h5>Frontal</h5>
+                            <img id="previewFrontalVerify" src="#" alt="Frontal" class="preview-image" style="display:none;">
+                            <button id="retakeFrontal" class="btn btn-sm btn-outline-light mt-1" style="display:none;">Reintentar</button>
+                        </div>
+                        <div class="col-md-4 col-sm-12 preview-container mb-3" id="previewContainerDerechoVerify">
+                            <h5>Lado Derecho</h5>
+                            <img id="previewDerechoVerify" src="#" alt="Derecho" class="preview-image" style="display:none;">
+                            <button id="retakeDerecho" class="btn btn-sm btn-outline-light mt-1" style="display:none;">Reintentar</button>
+                        </div>
+                        <div class="col-md-4 col-sm-12 preview-container mb-3" id="previewContainerIzquierdoVerify">
+                            <h5>Lado Izquierdo</h5>
+                            <img id="previewIzquierdoVerify" src="#" alt="Izquierdo" class="preview-image" style="display:none;">
+                            <button id="retakeIzquierdo" class="btn btn-sm btn-outline-light mt-1" style="display:none;">Reintentar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 mt-4">
+                    <button id="saveAllPhotos" class="btn btn-success btn-lg" disabled>
+                        Guardar Todas las Fotos
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                    </button>
+                    <button id="backToCaptureButton" class="btn btn-secondary w-100 mt-2">Volver a Captura</button>
+                </div>
+                <!-- El div de mensajes generalStatusMessage ya no está aquí, se movió arriba -->
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Modal para mostrar PDLs sin foto -->
+    <div class="modal fade" id="modalPdlsSinFoto" tabindex="-1" aria-labelledby="modalPdlsSinFotoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPdlsSinFotoLabel">
+                        <i class="fas fa-users"></i> PDLs sin Fotografía
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalContent">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="btnGenerarPDF">
+                        <i class="fas fa-file-pdf"></i> Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const video = document.getElementById('videoFeed');
+        const canvas = document.getElementById('photoCanvas');
+        const context = canvas.getContext('2d');
+
+        const cedulaInput = document.getElementById('cedulaInput');
+        const startCaptureButton = document.getElementById('startCaptureButton');
+        const displayCedula = document.getElementById('displayCedula');
+        const verificationCedula = document.getElementById('verificationCedula');
+        const goToVerificationButton = document.getElementById('goToVerificationButton');
+        const backToCaptureButton = document.getElementById('backToCaptureButton');
+
+
+        const captureButton = document.getElementById('captureButton');
+        const nextPhotoIndicator = document.getElementById('nextPhotoIndicator');
+
+        // Previsualizaciones en Paso 2
+        const previewFrontalImg = document.getElementById('previewFrontal');
+        const previewDerechoImg = document.getElementById('previewDerecho');
+        const previewIzquierdoImg = document.getElementById('previewIzquierdo');
+
+        // Previsualizaciones y botones de reintento en Paso 3
+        const previewFrontalVerifyImg = document.getElementById('previewFrontalVerify');
+        const previewDerechoVerifyImg = document.getElementById('previewDerechoVerify');
+        const previewIzquierdoVerifyImg = document.getElementById('previewIzquierdoVerify');
+        const retakeFrontalBtn = document.getElementById('retakeFrontal');
+        const retakeDerechoBtn = document.getElementById('retakeDerecho');
+        const retakeIzquierdoBtn = document.getElementById('retakeIzquierdo');
+
+
+        const saveAllPhotosBtn = document.getElementById('saveAllPhotos');
+        const generalStatusDiv = document.getElementById('generalStatusMessage'); // Div global para mensajes
+        const spinner = saveAllPhotosBtn.querySelector('.spinner-border');
+
+        let photos = { frontal: null, derecho: null, izquierdo: null };
+        const photoOrder = ['frontal', 'derecho', 'izquierdo'];
+        let currentPhotoIndex = 0; // Índice para photoOrder
+        let currentStream;
+        let currentStep = 1;
+
+        function showStep(stepNumber) {
+            document.querySelectorAll('.step-section').forEach(section => section.style.display = 'none');
+            const stepToShow = document.getElementById(`step${stepNumber}${stepNumber === 1 ? 'Cedula' : (stepNumber === 2 ? 'Capture' : 'Verification')}`);
+            if (stepToShow) {
+                stepToShow.style.display = 'block';
+            }
+            currentStep = stepNumber;
+
+            if (stepNumber === 2) {
+                startCamera(); 
+                updateCaptureUI();
+            } else if (currentStream) { // Detener cámara si no estamos en el paso de captura
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null; // Limpiar la referencia
+                video.srcObject = null; // Limpiar el video feed
+            }
+        }
+
+
+        startCaptureButton.addEventListener('click', () => {
+            const cedula = cedulaInput.value.trim();
+            if (!cedula) {
+                generalStatusDiv.innerHTML = `<div class="alert alert-warning" role="alert">Por favor, ingrese el número de cédula.</div>`;
+                return;
+            }
+            generalStatusDiv.innerHTML = ''; // Limpiar mensaje global al iniciar nueva captura
+            displayCedula.textContent = cedula;
+            verificationCedula.textContent = cedula;
+            showStep(2);
+        });
+
+        function getPhotoTypeToCapture() {
+            return currentPhotoIndex < photoOrder.length ? photoOrder[currentPhotoIndex] : null;
+        }
+
+        async function startCamera() {
+            // No limpiar generalStatusDiv aquí para no borrar mensajes de error de cédula
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error("navigator.mediaDevices.getUserMedia no está disponible. Asegúrese de que la página se sirve a través de HTTPS o localhost.");
+                generalStatusDiv.innerHTML = `<div class="alert alert-danger">La API para acceder a la cámara (getUserMedia) no está disponible en este navegador o contexto. Esto suele ocurrir si la página no se sirve a través de HTTPS o desde 'localhost'. Por favor, verifique la URL o contacte al administrador.</div>`;
+                if (captureButton) captureButton.disabled = true;
+                return; 
+            }
+
+            if (currentStream) { 
+                 currentStream.getTracks().forEach(track => track.stop());
+                 currentStream = null;
+                 video.srcObject = null; 
+                 console.log("Stream anterior detenido y srcObject limpiado.");
+            }
+            try {
+                console.log("Intentando obtener stream de cámara con facingMode: 'environment'...");
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                console.log("Stream de cámara obtenido:", currentStream);
+
+                if (currentStream && currentStream.getVideoTracks().length > 0 && currentStream.getVideoTracks()[0].readyState === 'live') {
+                    console.log("Pista de video activa encontrada en el stream.");
+                    video.srcObject = currentStream;
+                    console.log("srcObject asignado al elemento de video. Estado actual del video:", video.readyState, video.networkState);
+
+                    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+                    video.addEventListener('play', handlePlay);
+                    video.addEventListener('playing', handlePlaying);
+                    video.addEventListener('error', handleError);
+
+                    video.onloadedmetadata = () => {
+                        console.log("Metadatos del video cargados (onloadedmetadata).");
+                        console.log(`Dimensiones del video: ${video.videoWidth}x${video.videoHeight}`);
+                        if (video.videoWidth === 0 || video.videoHeight === 0) {
+                             console.warn("Dimensiones del video son 0. El stream podría no estar enviando frames válidos.");
+                        }
+                        video.play().then(() => {
+                            console.log("Reproducción de video iniciada exitosamente (desde onloadedmetadata).");
+                        }).catch(err => {
+                            console.error("Error al intentar reproducir el video (desde onloadedmetadata):", err);
+                            if (err.name !== 'AbortError') {
+                                generalStatusDiv.innerHTML = `<div class="alert alert-warning">Cámara activa, pero la reproducción automática podría estar bloqueada. Error: ${err.name} - ${err.message}. Intente interactuar con la página o revise los permisos.</div>`;
+                            }
+                        });
+                    };
+                    video.play().then(() => {
+                        console.log("Reproducción de video iniciada exitosamente (intento directo).");
+                    }).catch(err => {
+                        console.warn("Advertencia en el intento directo de video.play():", err.name, err.message);
+                    });
+
+                } else {
+                    console.error("El stream obtenido no es válido o no tiene pistas de video activas.");
+                    generalStatusDiv.innerHTML = `<div class="alert alert-danger">No se pudo obtener una pista de video válida de la cámara. Verifique que la cámara no esté cubierta, que funcione correctamente o que no esté siendo usada por otra aplicación. (Estado del stream: ${currentStream ? 'válido pero sin pistas activas' : 'nulo'})</div>`;
+                    if (currentStream && currentStream.getVideoTracks().length > 0) {
+                        currentStream.getVideoTracks().forEach((track, index) => {
+                            console.log(`Detalles de Pista de video ${index}: readyState=${track.readyState}, muted=${track.muted}, enabled=${track.enabled}, kind=${track.kind}, label='${track.label}'`);
+                        });
+                    } else if (currentStream) {
+                        console.log("El stream fue obtenido pero no tiene pistas de video.");
+                    }
+                    if (captureButton) captureButton.disabled = true;
+                }
+
+                if (currentStep === 2) { 
+                    updateCaptureUI();
+                }
+            } catch (err) {
+                console.error("Error al acceder a la cámara: ", err);
+                let userFriendlyMessage = `Error al acceder a la cámara: ${err.name} - ${err.message}.`;
+                if (err.name === "NotAllowedError") {
+                    userFriendlyMessage += " Por favor, asegúrese de haber concedido los permisos necesarios para acceder a la cámara en la configuración de su navegador.";
+                } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                    userFriendlyMessage += " No se encontró ninguna cámara. Asegúrese de que haya una cámara conectada y habilitada.";
+                } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+                    userFriendlyMessage += " La cámara podría estar siendo utilizada por otra aplicación o hay un problema con el hardware.";
+                }
+                generalStatusDiv.innerHTML = `<div class="alert alert-danger">${userFriendlyMessage}</div>`;
+                if (captureButton) captureButton.disabled = true;
+            }
+        }
+
+        function handleLoadedMetadata() { console.log('Evento loadedmetadata disparado.'); }
+        function handlePlay() { console.log('Evento play disparado. El video ha comenzado a reproducirse.'); }
+        function handlePlaying() { console.log('Evento playing disparado. El video está reproduciéndose y hay datos de video.'); }
+        function handleError(event) {
+            console.error('Evento de error en el elemento de video:', event);
+            let errorMsg = 'Error en la reproducción del video.';
+            if (video.error) { errorMsg += ` Código: ${video.error.code}. Mensaje: ${video.error.message}`; }
+            generalStatusDiv.innerHTML = `<div class="alert alert-danger">${errorMsg}</div>`;
+        }
+
+        function updateCaptureUI() {
+            if (currentStep !== 2) return;
+            const cedula = displayCedula.textContent;
+            if (!cedula) {
+                video.classList.remove('highlight-capture');
+                if (captureButton) captureButton.disabled = true;
+                return;
+            }
+            checkAllPhotosTaken();
+            const photoType = getPhotoTypeToCapture();
+            const allCurrentlyTaken = photos.frontal && photos.derecho && photos.izquierdo;
+
+            if (photoType && !allCurrentlyTaken) {
+                let photoName = "";
+                if (photoType === 'frontal') photoName = "Foto Frontal";
+                else if (photoType === 'derecho') photoName = "Foto Lado Derecho";
+                else if (photoType === 'izquierdo') photoName = "Foto Lado Izquierdo";
+
+                nextPhotoIndicator.textContent = `Preparado para: ${photoName}`;
+                captureButton.textContent = `Tomar ${photoName}`;
+                captureButton.disabled = false;
+                video.classList.add('highlight-capture');
+                document.querySelectorAll('#step2Capture .preview-container').forEach(c => c.classList.remove('active-preview'));
+                const activePreviewContainer = document.getElementById(`previewContainer${photoType.charAt(0).toUpperCase() + photoType.slice(1)}`);
+                if (activePreviewContainer) activePreviewContainer.classList.add('active-preview');
+            }
+        }
+
+        function takePhoto() {
+            const typeToCapture = getPhotoTypeToCapture();
+            if (!typeToCapture) return; 
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg'); 
+            photos[typeToCapture] = dataUrl;
+
+            const previewImgStep2 = document.getElementById(`preview${typeToCapture.charAt(0).toUpperCase() + typeToCapture.slice(1)}`);
+            if (previewImgStep2) {
+                previewImgStep2.src = dataUrl;
+                previewImgStep2.style.display = 'block';
+            }
+            currentPhotoIndex++;
+            updateCaptureUI();
+        }
+
+        function retakePhoto(type) {
+            photos[type] = null;
+            const previewImgStep3 = document.getElementById(`preview${type.charAt(0).toUpperCase() + type.slice(1)}Verify`);
+             if (previewImgStep3) {
+                previewImgStep3.style.display = 'none';
+                previewImgStep3.src = '#';
+            }
+            const retakeBtnStep3 = document.getElementById(`retake${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            if (retakeBtnStep3) retakeBtnStep3.style.display = 'none';
+
+            const previewImgStep2 = document.getElementById(`preview${type.charAt(0).toUpperCase() + type.slice(1)}`);
+            if (previewImgStep2) {
+                previewImgStep2.style.display = 'none';
+                previewImgStep2.src = '#';
+            }
+            const retakeIndex = photoOrder.indexOf(type);
+            goToVerificationButton.style.display = 'none'; 
+            if (retakeIndex !== -1) { currentPhotoIndex = retakeIndex; }
+            // No limpiar generalStatusDiv aquí, para no borrar mensajes de error de cámara si los hubo
+            showStep(2); 
+        }
+
+        function checkAllPhotosTaken() {
+            const allTaken = photos.frontal && photos.derecho && photos.izquierdo;
+            saveAllPhotosBtn.disabled = !allTaken;
+
+            if (currentStep === 2) {
+                console.log(`checkAllPhotosTaken (Step 2): allTaken = ${allTaken}, F:${!!photos.frontal}, D:${!!photos.derecho}, I:${!!photos.izquierdo}`);
+                if (allTaken) {
+                    goToVerificationButton.style.display = 'block';
+                    nextPhotoIndicator.textContent = "¡Todas las fotos tomadas!";
+                    captureButton.textContent = "Captura Completa";
+                    captureButton.disabled = true;
+                    video.classList.remove('highlight-capture');
+                    document.querySelectorAll('#step2Capture .preview-container').forEach(c => c.classList.remove('active-preview'));
+                    console.log("goToVerificationButton Debería estar VISIBLE");
+                } else {
+                    goToVerificationButton.style.display = 'none';
+                    console.log("goToVerificationButton Debería estar OCULTO");
+                }
+            }
+        }
+
+        async function savePhotoToServer(cedula, photoType, imageDataUrl) {
+            try {
+                const response = await fetch("{{ url_for('chat.upload_reseña_photo_route') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cedula, photo_type: photoType, image_data_url: imageDataUrl })
+                });
+                const result = await response.json();
+                if (!result.success) { throw new Error(result.error || 'Error desconocido del servidor.'); }
+                return result;
+            } catch (error) {
+                console.error(`Error guardando foto ${photoType}:`, error);
+                throw error; 
+            }
+        }
+
+        goToVerificationButton.addEventListener('click', () => {
+            showStep(3);
+            photoOrder.forEach(type => {
+                const previewImgVerify = document.getElementById(`preview${type.charAt(0).toUpperCase() + type.slice(1)}Verify`);
+                const retakeBtnVerify = document.getElementById(`retake${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                if (photos[type]) {
+                    if(previewImgVerify) { previewImgVerify.src = photos[type]; previewImgVerify.style.display = 'block'; }
+                    if(retakeBtnVerify) retakeBtnVerify.style.display = 'inline-block';
+                } else {
+                    if(previewImgVerify) previewImgVerify.style.display = 'none';
+                    if(retakeBtnVerify) retakeBtnVerify.style.display = 'none';
+                }
+            });
+            checkAllPhotosTaken(); 
+        });
+
+        backToCaptureButton.addEventListener('click', () => showStep(2));
+        captureButton.addEventListener('click', takePhoto);
+        retakeFrontalBtn.addEventListener('click', () => retakePhoto('frontal'));
+        retakeDerechoBtn.addEventListener('click', () => retakePhoto('derecho'));
+        retakeIzquierdoBtn.addEventListener('click', () => retakePhoto('izquierdo'));
+
+        saveAllPhotosBtn.addEventListener('click', async () => {
+            const cedula = verificationCedula.textContent; 
+            generalStatusDiv.innerHTML = ''; // Limpiar mensaje global al iniciar guardado
+
+            if (!cedula) {
+                generalStatusDiv.innerHTML = '<div class="alert alert-warning">Por favor, ingrese el número de cédula.</div>';
+                return;
+            }
+            if (!photos.frontal || !photos.derecho || !photos.izquierdo) {
+                generalStatusDiv.innerHTML = '<div class="alert alert-warning">Debe tomar las tres fotos antes de guardar.</div>';
+                return;
+            }
+
+            saveAllPhotosBtn.disabled = true;
+            spinner.style.display = 'inline-block';
+            generalStatusDiv.innerHTML = '<div class="alert alert-info">Guardando fotos...</div>';
+
+            try {
+                const results = await Promise.all([
+                    savePhotoToServer(cedula, 'frontal', photos.frontal),
+                    savePhotoToServer(cedula, 'derecho', photos.derecho),
+                    savePhotoToServer(cedula, 'izquierdo', photos.izquierdo)
+                ]);
+
+                generalStatusDiv.innerHTML = '<div class="alert alert-success">¡Confirmado! Las tres fotos han sido enviadas y guardadas exitosamente.</div>';
+                
+                // Resetear UI para la próxima reseña
+                photos = { frontal: null, derecho: null, izquierdo: null };
+                ['Frontal', 'Derecho', 'Izquierdo'].forEach(type => {
+                    const p1 = document.getElementById(`preview${type}`); // Preview en Paso 2
+                    const p2V = document.getElementById(`preview${type}Verify`); // Preview en Paso 3
+                    const rV = document.getElementById(`retake${type}`); // Botón reintento en Paso 3
+                    if(p1) { p1.style.display = 'none'; p1.src = '#'; }
+                    if(p2V) { p2V.style.display = 'none'; p2V.src = '#'; }
+                    if(rV) rV.style.display = 'none';
+                });
+                cedulaInput.value = ''; // Limpiar input de cédula en Paso 1
+                displayCedula.textContent = ''; // Limpiar display de cédula en Paso 2
+                verificationCedula.textContent = ''; // Limpiar display de cédula en Paso 3
+                currentPhotoIndex = 0; 
+                goToVerificationButton.style.display = 'none'; // Ocultar botón de ir a verificación
+                showStep(1); // Volver al Paso 1
+
+            } catch (error) {
+                generalStatusDiv.innerHTML = `<div class="alert alert-danger">Error al guardar una o más fotos en el servidor: ${error.message}</div>`;
+            } finally {
+                saveAllPhotosBtn.disabled = false; 
+                spinner.style.display = 'none';
+                // No es estrictamente necesario llamar a checkAllPhotosTaken() aquí,
+                // ya que el estado de los botones se reajustará al cambiar de paso o iniciar nueva captura.
+            }
+        });
+        
+        showStep(1); // Mostrar el Paso 1 al cargar la página
+
+        // Función para listar PDLs sin foto y mostrar en modal
+        document.getElementById('btnReporteSinFoto').addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+            
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('modalPdlsSinFoto'));
+            modal.show();
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+
+            try {
+                const response = await fetch("{{ url_for('chat.listar_pdls_sin_foto') }}");
+                const data = await response.json();
+
+                if (data.success) {
+                    if (data.count > 0) {
+                        // Mostrar la tabla
+                        let html = `<div class="alert alert-info"><i class="fas fa-info-circle"></i> ${data.message}</div>`;
+                        html += '<div class="table-responsive">';
+                        html += '<table class="table table-striped table-hover table-sm">';
+                        html += '<thead class="table-dark"><tr>';
+                        
+                        // Encabezados dinámicos basados en las columnas de data.data[0]
+                        const columnas = Object.keys(data.data[0]);
+                        columnas.forEach(col => {
+                            html += `<th>${col}</th>`;
+                        });
+                        html += '</tr></thead><tbody>';
+                        
+                        // Datos
+                        data.data.forEach(item => {
+                            html += '<tr>';
+                            columnas.forEach(col => {
+                                html += `<td>${item[col] || ''}</td>`;
+                            });
+                            html += '</tr>';
+                        });
+                        
+                        html += '</tbody></table></div>';
+                        modalContent.innerHTML = html;
+                    } else {
+                        modalContent.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> ${data.message}</div>`;
+                    }
+                } else {
+                    modalContent.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                console.error('Error listando PDLs:', error);
+                modalContent.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> Error al cargar los datos. Por favor, intente nuevamente.</div>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+        // Función para generar PDF desde el modal
+        document.getElementById('btnGenerarPDF').addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+            
+            try {
+                const response = await fetch("{{ url_for('chat.generar_pdf_pdls_sin_foto') }}");
+                const data = await response.json();
+
+                if (data.success) {
+                    // Descargar el PDF
+                    window.location.href = data.url;
+                    
+                    // Mostrar mensaje de éxito
+                    const modalContent = document.getElementById('modalContent');
+                    const successMsg = document.createElement('div');
+                    successMsg.className = 'alert alert-success';
+                    successMsg.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
+                    modalContent.insertBefore(successMsg, modalContent.firstChild);
+                    
+                    // Cerrar el modal después de un breve delay
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('modalPdlsSinFoto')).hide();
+                    }, 2000);
+                } else {
+                    const modalContent = document.getElementById('modalContent');
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'alert alert-danger';
+                    errorMsg.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${data.error}`;
+                    modalContent.insertBefore(errorMsg, modalContent.firstChild);
+                }
+            } catch (error) {
+                console.error('Error generando PDF:', error);
+                const modalContent = document.getElementById('modalContent');
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'alert alert-danger';
+                errorMsg.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error al generar el PDF. Por favor, intente nuevamente.';
+                modalContent.insertBefore(errorMsg, modalContent.firstChild);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+    </script>
+{% endblock %}

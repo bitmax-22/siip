@@ -1,0 +1,54 @@
+/* Estilos específicos para la página de Dashboard */
+
+.dashboard-body-styles {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image: linear-gradient(to right, #4b6cb7, #182848);
+    color: #e0e0e0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding-top: 56px;
+    width: 100%;
+    min-height: 100%;
+}
+
+.dashboard-container {
+    padding: 20px;
+}
+
+.count-card .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    height: 400px;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: #6c757d;
+    position: relative;
+}
+
+.count-card {
+    margin-bottom: 20px;
+}
+
+.dashboard-body-styles h2 {
+    margin-bottom: 20px;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+.dashboard-body-styles .alert {
+    margin-top: 15px;
+}
+
+

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}SIIP - Cargar Funcionarios desde Excel{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .main-container {
+            padding-top: 76px;
+            padding-bottom: 40px;
+            background-image: linear-gradient(to right, #4b6cb7, #182848);
+            color: #e0e0e0;
+            min-height: calc(100vh - 56px);
+        }
+        .upload-card {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            border-radius: 15px;
+        }
+        .instructions {
+            background-color: rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-left: 5px solid #4b6cb7;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-container">
+    <div class="container">
+        <div class="upload-card">
+            <h2 class="text-white text-center mb-4">Cargar Funcionarios desde Excel</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="instructions">
+                        <h5 class="text-white">Instrucciones</h5>
+                        <p>Siga estos pasos para cargar los datos correctamente:</p>
+                        <ol>
+                            <li>Descargue la plantilla de Excel.</li>
+                            <li>Llene la plantilla con los datos de los funcionarios. <strong>No cambie los nombres de las columnas.</strong></li>
+                            <li>Guarde el archivo en formato <code>.xlsx</code>.</li>
+                            <li>Seleccione el archivo y haga clic en "Cargar Archivo".</li>
+                        </ol>
+                        <p>El sistema utilizará la <strong>cédula</strong> para identificar a los funcionarios. Si una cédula ya existe, se actualizarán sus datos; si no existe, se creará un nuevo registro.</p>
+                        <a href="{{ url_for('rrhh.descargar_plantilla') }}" class="btn btn-info">
+                            <i class="fas fa-download"></i> Descargar Plantilla
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-6 d-flex flex-column justify-content-center align-items-center">
+                    <h5 class="text-white mb-3">Subir Archivo</h5>
+                    <form method="post" enctype="multipart/form-data" class="w-100">
+                        <input class="form-control" type="file" id="excel_file" name="excel_file" accept=".xlsx" required style="display: none;">
+                        <label for="excel_file" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-folder-open"></i> Seleccionar archivo...
+                        </label>
+                        <p class="text-center"><small id="file-name-display" class="text-muted">Ningún archivo seleccionado</small></p>
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-upload"></i> Cargar Archivo</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const excelFileInput = document.getElementById('excel_file');
+    const fileNameDisplay = document.getElementById('file-name-display');
+
+    excelFileInput.addEventListener('change', function() {
+        fileNameDisplay.textContent = excelFileInput.files.length > 0 ? excelFileInput.files[0].name : 'Ningún archivo seleccionado';
+    });
+});
+</script>
+{% endblock %}

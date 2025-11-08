@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Panadería - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4 text-center">Gestión de Panadería</h1>
+    <div class="row">
+        <!-- Card para Productos -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-birthday-cake fa-3x mb-3"></i>
+                    <h5 class="card-title">Productos</h5>
+                    <p class="card-text">Gestionar los productos de la panadería.</p>
+                    <a href="{{ url_for('panaderia.productos') }}" class="btn btn-primary">Ir a Productos</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card para Vendedores -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-3x mb-3"></i>
+                    <h5 class="card-title">Vendedores</h5>
+                    <p class="card-text">Gestionar la información de los vendedores.</p>
+                    <a href="{{ url_for('panaderia.vendedores') }}" class="btn btn-primary">Ir a Vendedores</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card para Producción -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-industry fa-3x mb-3"></i>
+                    <h5 class="card-title">Producción Diaria</h5>
+                    <p class="card-text">Registrar la producción diaria de panes.</p>
+                    <a href="{{ url_for('panaderia.produccion') }}" class="btn btn-primary">Ir a Producción</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card para Ventas -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-cash-register fa-3x mb-3"></i>
+                    <h5 class="card-title">Ventas Diarias</h5>
+                    <p class="card-text">Registrar las ventas y despachos a vendedores.</p>
+                    <a href="{{ url_for('panaderia.ventas') }}" class="btn btn-primary">Ir a Ventas</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card para Pedidos -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                    <h5 class="card-title">Control de Pedidos</h5>
+                    <p class="card-text">Gestionar pedidos con impresión de comandas.</p>
+                    <a href="{{ url_for('panaderia.pedidos') }}" class="btn btn-success">Ir a Pedidos</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card para Reportes de Pedidos -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                    <h5 class="card-title">Reportes de Pedidos</h5>
+                    <p class="card-text">Reportes de ventas por vendedor o producto con impresión térmica.</p>
+                    <a href="{{ url_for('panaderia.reportes_pedidos') }}" class="btn btn-info">Ver Reportes</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card para Reportes -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                    <h5 class="card-title">Reportes</h5>
+                    <p class="card-text">Consulta reportes de ventas, producción y deuda de vendedores.</p>
+                    <a href="{{ url_for('panaderia.reporte_vendedores') }}" class="btn btn-primary me-2">Deuda Vendedores</a>
+                    <a href="{{ url_for('panaderia.reporte_diario') }}" class="btn btn-secondary">Reporte Diario</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

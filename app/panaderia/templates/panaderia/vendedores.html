@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Añadir Nuevo Vendedor</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('panaderia.vendedores') }}">
+                {{ form.csrf_token }}
+                <div class="mb-3">
+                    {{ form.nombre.label(class="form-label") }}
+                    {{ form.nombre(class="form-control") }}
+                    {% if form.nombre.errors %}
+                        <div class="text-danger">
+                            {% for error in form.nombre.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.telefono.label(class="form-label") }}
+                    {{ form.telefono(class="form-control") }}
+                    {% if form.telefono.errors %}
+                        <div class="text-danger">
+                            {% for error in form.telefono.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.direccion.label(class="form-label") }}
+                    {{ form.direccion(class="form-control") }}
+                    {% if form.direccion.errors %}
+                        <div class="text-danger">
+                            {% for error in form.direccion.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Listado de Vendedores</h5>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% if vendedores %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Dirección</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vendedor in vendedores %}
+                        <tr>
+                            <td>{{ vendedor.id }}</td>
+                            <td>{{ vendedor.nombre }}</td>
+                            <td>{{ vendedor.telefono if vendedor.telefono else 'N/A' }}</td>
+                            <td>{{ vendedor.direccion if vendedor.direccion else 'N/A' }}</td>
+                            <td>
+                                <a href="{{ url_for('panaderia.editar_vendedor', vendedor_id=vendedor.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                                <form action="{{ url_for('panaderia.eliminar_vendedor', vendedor_id=vendedor.id) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar este vendedor?');">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No hay vendedores registrados aún.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

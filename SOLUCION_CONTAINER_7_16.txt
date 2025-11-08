@@ -1,0 +1,72 @@
+================================================================================
+  SOLUCIÓN: Instalar Container en RouterOS 7.16.1 (SIN actualizar)
+================================================================================
+
+NO necesitas actualizar el RouterOS.
+Puedes instalar el paquete container.npk para RouterOS 7.16.1.
+
+================================================================================
+PASO 1: DESCARGAR PAQUETES EXTRA
+================================================================================
+
+En tu navegador, abre:
+https://download.mikrotik.com/routeros/7.16.1/all_packages-arm-7.16.1.zip
+
+Descarga el archivo ZIP completo.
+
+================================================================================
+PASO 2: EXTRAER Y SUBIR container.npk
+================================================================================
+
+1. Extrae el ZIP en tu computadora
+2. Busca el archivo: container-7.16.1.npk
+3. Abre Winbox → Files
+4. Arrastra el archivo container-7.16.1.npk a la carpeta raíz del router
+5. Espera a que termine la subida
+
+================================================================================
+PASO 3: INSTALAR Y REINICIAR
+================================================================================
+
+En Terminal de MikroTik:
+
+/system package install file-name=container-7.16.1.npk
+/system reboot
+
+ESPERA 2-3 minutos a que el router reinicie.
+
+================================================================================
+PASO 4: VERIFICAR INSTALACIÓN
+================================================================================
+
+/system package print
+
+# Deberías ver "container" en la lista ✅
+
+================================================================================
+PASO 5: HABILITAR CONTAINER MODE
+================================================================================
+
+/system device-mode/update container=yes
+
+IMPORTANTE: El router se reiniciará OTRA VEZ.
+ESPERA 2-3 minutos.
+
+================================================================================
+PASO 6: CONFIGURAR CONTAINERS
+================================================================================
+
+# Verificar que container mode esté habilitado
+/system device-mode/print
+
+# Deberías ver "container" habilitado ✅
+
+================================================================================
+SIGUIENTE PASO:
+================================================================================
+
+Después de que el router reinicie, continuamos con la configuración
+de Tailscale en el container.
+
+================================================================================
+

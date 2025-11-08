@@ -1,0 +1,94 @@
+<!-- Modal para Actualizar Estatus -->
+<div class="modal fade" id="estatusModal-{{ funcionario.id }}" tabindex="-1" aria-labelledby="estatusModalLabel-{{ funcionario.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <form action="{{ url_for('rrhh.actualizar_estatus', funcionario_id=funcionario.id) }}" method="POST">
+                {{ form.hidden_tag() }}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="estatusModalLabel-{{ funcionario.id }}">Actualizar Estatus de {{ funcionario.nombres }} {{ funcionario.apellidos }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="estatus_actual-{{ funcionario.id }}" class="form-label">Nuevo Estatus</label>
+                        {{ form.estatus_actual(class="form-select bg-secondary text-white", id="estatus_actual-" ~ funcionario.id, value=funcionario.estatus_actual) }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="observaciones_estatus-{{ funcionario.id }}" class="form-label">Observaciones</label>
+                        {{ form.observaciones_estatus(class="form-control bg-secondary text-white", id="observaciones_estatus-" ~ funcionario.id, rows="3", value=funcionario.observaciones_estatus or '', placeholder="Añadir observaciones...") }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Actualizar Estatus</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Eliminar Funcionario -->
+<div class="modal fade" id="eliminarFuncionarioModal-{{ funcionario.id }}" tabindex="-1" aria-labelledby="eliminarFuncionarioModalLabel-{{ funcionario.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-danger text-white">
+            <form action="{{ url_for('rrhh.eliminar_funcionario', funcionario_id=funcionario.id) }}" method="POST">
+                {{ form.hidden_tag() }}
+                <div class="modal-header"><h5 class="modal-title" id="eliminarModalLabel-{{ funcionario.id }}">Confirmar Eliminación</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar permanentemente a <strong>{{ funcionario.nombres }} {{ funcionario.apellidos }}</strong>?</p>
+                    <p class="text-warning"><small>Esta acción no se puede deshacer. Se eliminarán todos los datos asociados.</small></p>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-outline-light">Sí, Eliminar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ver Reposos -->
+<div class="modal fade" id="verRepososModal-{{ funcionario.id }}" tabindex="-1" aria-labelledby="verRepososModalLabel-{{ funcionario.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title" id="verRepososModalLabel-{{ funcionario.id }}">Reposos de {{ funcionario.nombres }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if reposos %}
+                    <ul class="list-group list-group-flush">
+                        {% for reposo in reposos %}
+                        <li class="list-group-item bg-transparent text-white d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{{ url_for('static', filename='reposos_funcionarios/' + reposo.file_path) }}" target="_blank">
+                                    <i class="fas fa-file-alt"></i> {{ reposo.file_path }}
+                                </a>
+                                <p class="mb-0"><small class="text-muted">{{ reposo.descripcion or 'Sin descripción' }} - Cargado el {{ reposo.fecha_carga.strftime('%d/%m/%Y') }}</small></p>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#eliminarReposoModal-{{ reposo.id }}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No hay documentos de reposo cargados para este funcionario.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Eliminar Reposo (se debe incluir dentro del loop de reposos en la plantilla principal) -->
+{% if reposos %}
+{% for reposo in reposos %}
+<div class="modal fade" id="eliminarReposoModal-{{ reposo.id }}" tabindex="-1" aria-labelledby="eliminarReposoModalLabel-{{ reposo.id }}" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content bg-danger text-white">
+        <form action="{{ url_for('rrhh.eliminar_reposo', reposo_id=reposo.id) }}" method="POST">
+            <div class="modal-header"><h5 class="modal-title">Confirmar Eliminación</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>¿Estás seguro de que deseas eliminar este documento de reposo?</p></div>
+            <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-outline-light">Sí, Eliminar</button></div>
+        </form>
+    </div></div>
+</div>
+{% endfor %}
+{% endif %}

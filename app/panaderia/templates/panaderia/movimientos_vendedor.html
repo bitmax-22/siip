@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Registrar Movimiento de Vendedor</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('panaderia.movimientos_vendedor') }}">
+                {{ form.csrf_token }}
+                <div class="mb-3">
+                    {{ form.vendedor_id.label(class="form-label") }}
+                    {{ form.vendedor_id(class="form-select") }}
+                    {% if form.vendedor_id.errors %}
+                        <div class="text-danger">
+                            {% for error in form.vendedor_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.tipo_movimiento.label(class="form-label") }}
+                    {{ form.tipo_movimiento(class="form-select") }}
+                    {% if form.tipo_movimiento.errors %}
+                        <div class="text-danger">
+                            {% for error in form.tipo_movimiento.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.monto.label(class="form-label") }}
+                    {{ form.monto(class="form-control", type="number", step="0.01") }}
+                    {% if form.monto.errors %}
+                        <div class="text-danger">
+                            {% for error in form.monto.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.descripcion.label(class="form-label") }}
+                    {{ form.descripcion(class="form-control") }}
+                    {% if form.descripcion.errors %}
+                        <div class="text-danger">
+                            {% for error in form.descripcion.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Historial de Movimientos</h5>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% if movimientos %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Vendedor</th>
+                            <th>Tipo Movimiento</th>
+                            <th>Monto</th>
+                            <th>Fecha Movimiento</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mov in movimientos %}
+                        <tr>
+                            <td>{{ mov.id }}</td>
+                            <td>{{ mov.vendedor_movimiento.nombre }}</td>
+                            <td>{{ mov.tipo_movimiento }}</td>
+                            <td>{{ "%.2f"|format(mov.monto) }}</td>
+                            <td>{{ mov.fecha_movimiento.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ mov.descripcion if mov.descripcion else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No hay registros de movimientos aún.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

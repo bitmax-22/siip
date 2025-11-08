@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Balance Actual por Vendedor</h5>
+        </div>
+        <div class="card-body">
+            {% if reporte %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Vendedor</th>
+                            <th>Balance Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in reporte %}
+                        <tr>
+                            <td>{{ item.nombre }}</td>
+                            <td class="{% if item.balance_actual > 0 %}text-danger{% elif item.balance_actual < 0 %}text-success{% endif %}">
+                                {{ "%.2f"|format(item.balance_actual) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No hay datos de movimientos de vendedores para generar el reporte.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Editar Venta</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('panaderia.editar_venta', venta_id=venta.id) }}">
+                {{ form.csrf_token }}
+                <div class="mb-3">
+                    {{ form.produccion_id.label(class="form-label") }}
+                    {{ form.produccion_id(class="form-select") }}
+                    {% if form.produccion_id.errors %}
+                        <div class="text-danger">
+                            {% for error in form.produccion_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.vendedor_id.label(class="form-label") }}
+                    {{ form.vendedor_id(class="form-select") }}
+                    {% if form.vendedor_id.errors %}
+                        <div class="text-danger">
+                            {% for error in form.vendedor_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.cantidad_vendida.label(class="form-label") }}
+                    {{ form.cantidad_vendida(class="form-control", type="number") }}
+                    {% if form.cantidad_vendida.errors %}
+                        <div class="text-danger">
+                            {% for error in form.cantidad_vendida.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.fecha_venta.label(class="form-label") }}
+                    {{ form.fecha_venta(class="form-control") }}
+                    {% if form.fecha_venta.errors %}
+                        <div class="text-danger">
+                            {% for error in form.fecha_venta.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary", value="Actualizar Venta") }}
+                <a href="{{ url_for('panaderia.ventas') }}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

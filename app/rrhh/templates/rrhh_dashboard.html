@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}SIIP - Gestión RRHH{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .main-container {
+            padding-top: 76px;
+            padding-bottom: 20px;
+            background-image: linear-gradient(to right, #4b6cb7, #182848);
+            color: #e0e0e0;
+            min-height: calc(100vh - 56px);
+            display: flex; /* Añadido para centrar verticalmente */
+            align-items: center; /* Añadido para centrar verticalmente */
+        }
+        .card-custom {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            border-radius: 15px;
+        }
+        .card-custom:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+        }
+        .card-custom .card-body a {
+            text-decoration: none;
+            color: #e0e0e0;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-container">
+    <div class="container"> <!-- Contenedor interno para controlar el ancho -->
+        <h2 class="text-white mb-5 text-center">Gestión de Recursos Humanos</h2>
+        <div class="row justify-content-center">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card card-custom h-100"><div class="card-body text-center p-4 d-flex flex-column justify-content-center"><a href="{{ url_for('rrhh.listar_seguridad_custodia') }}"><i class="fas fa-shield-alt fa-3x mb-3"></i><h5 class="card-title mb-0">Personal de Seguridad y Custodia</h5></a></div></div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card card-custom h-100"><div class="card-body text-center p-4 d-flex flex-column justify-content-center"><a href="{{ url_for('rrhh.listar_administrativos') }}"><i class="fas fa-briefcase fa-3x mb-3"></i><h5 class="card-title mb-0">Personal Administrativo</h5></a></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

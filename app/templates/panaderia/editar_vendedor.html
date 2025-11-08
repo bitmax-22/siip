@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Vendedor - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-edit"></i> Editar Vendedor</h1>
+        <a href="{{ url_for('panaderia.vendedores') }}" class="btn btn-secondary">Volver a Vendedores</a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Editando: {{ vendedor.nombre }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('panaderia.editar_vendedor', vendedor_id=vendedor.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.nombre.label(class="form-label") }}
+                    {{ form.nombre(class="form-control") }}
+                    {% if form.nombre.errors %}
+                        <div class="text-danger">{% for error in form.nombre.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.telefono.label(class="form-label") }}
+                    {{ form.telefono(class="form-control") }}
+                    {% if form.telefono.errors %}
+                        <div class="text-danger">{% for error in form.telefono.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.direccion.label(class="form-label") }}
+                    {{ form.direccion(class="form-control") }}
+                    {% if form.direccion.errors %}
+                        <div class="text-danger">{% for error in form.direccion.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

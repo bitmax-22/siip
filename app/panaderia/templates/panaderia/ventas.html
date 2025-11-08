@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Registrar Venta Diaria</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('panaderia.ventas') }}">
+                {{ form.csrf_token }}
+                <div class="mb-3">
+                    {{ form.produccion_id.label(class="form-label") }}
+                    {{ form.produccion_id(class="form-select") }}
+                    {% if form.produccion_id.errors %}
+                        <div class="text-danger">
+                            {% for error in form.produccion_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.vendedor_id.label(class="form-label") }}
+                    {{ form.vendedor_id(class="form-select") }}
+                    {% if form.vendedor_id.errors %}
+                        <div class="text-danger">
+                            {% for error in form.vendedor_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.cantidad_vendida.label(class="form-label") }}
+                    {{ form.cantidad_vendida(class="form-control", type="number") }}
+                    {% if form.cantidad_vendida.errors %}
+                        <div class="text-danger">
+                            {% for error in form.cantidad_vendida.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.fecha_venta.label(class="form-label") }}
+                    {{ form.fecha_venta(class="form-control") }}
+                    {% if form.fecha_venta.errors %}
+                        <div class="text-danger">
+                            {% for error in form.fecha_venta.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+                <button type="submit" class="btn btn-info ms-2" name="regalia_submit" value="true">Registrar como Regalia</button>
+                <button type="submit" class="btn btn-success ms-2" name="descuento_submit" value="true">Registrar como Venta Descuento</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Historial de Ventas</h5>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% if ventas %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Producto Vendido</th>
+                            <th>Vendedor</th>
+                            <th>Cantidad Vendida</th>
+                            <th>Precio Total</th>
+                            <th>Tipo de Venta</th>
+                            <th>Fecha Venta</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venta in ventas %}
+                        <tr>
+                            <td>{{ venta.id }}</td>
+                            <td>{{ venta.produccion_origen.producto.nombre }}</td>
+                            <td>{{ venta.vendedor.nombre }}</td>
+                            <td>{{ venta.cantidad_vendida }}</td>
+                            <td>Bs. {{ "{:,.2f}".format(venta.precio_total_venta) }}</td>
+                            <td>{{ venta.tipo_venta }}</td>
+                            <td>{{ venta.fecha_venta.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <a href="{{ url_for('panaderia.editar_venta', venta_id=venta.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                                <form action="{{ url_for('panaderia.eliminar_venta', venta_id=venta.id) }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar esta venta?');">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No hay registros de ventas aún.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

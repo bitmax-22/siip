@@ -1,0 +1,65 @@
+================================================================================
+  SOLUCIÓN RÁPIDA: Tailscale en PC Windows Local (Recomendada para RouterOS v7)
+================================================================================
+
+Ya tienes Tailscale en tu VPS Windows Server ✅
+Ahora necesitas instalarlo en un PC Windows de tu red local.
+
+================================================================================
+
+EN EL PC WINDOWS DE LA PANADERÍA (cualquier PC en la red 192.168.88.x):
+-------------------------------------------------------------------------
+
+# Abrir PowerShell como Administrador:
+
+# 1. Descargar e instalar Tailscale:
+Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/windows/tailscale-setup-latest.exe" -OutFile "$env:TEMP\tailscale-setup.exe"
+Start-Process -FilePath "$env:TEMP\tailscale-setup.exe" -ArgumentList "-q" -Wait
+
+# 2. Abrir Tailscale (Buscar en menú Inicio)
+# 3. Iniciar sesión con la MISMA cuenta que usaste en el VPS
+# 4. Activar "Connect"
+
+# 5. Configurar como subnet router:
+tailscale up --advertise-routes=192.168.88.0/24
+
+================================================================================
+
+VERIFICAR EN TAILSCALE DASHBOARD:
+-------------------------------------------------------------------
+1. Abre: https://login.tailscale.com/admin/machines
+2. Deberías ver:
+   - Tu VPS Windows Server
+   - Tu PC Windows local (con rutas: 192.168.88.0/24)
+3. Click en el PC Windows
+4. Click "..." → "Edit route settings"
+5. Activa "Advertise Subnet Routes"
+6. Marca 192.168.88.0/24
+7. Click "Save"
+
+================================================================================
+
+EN EL VPS WINDOWS SERVER (ya lo hiciste, solo verificar):
+----------------------------------------------------------
+# PowerShell como Administrador:
+
+# Aceptar rutas de otros dispositivos:
+tailscale up --accept-routes
+
+# Verificar estado:
+tailscale status
+
+# Probar conectividad:
+Test-Connection 192.168.88.128
+Test-NetConnection -ComputerName 192.168.88.128 -Port 9100
+
+================================================================================
+
+¡LISTO! ✅
+-------------------------------------------------------------------
+Ahora tu VPS puede conectarse a 192.168.88.128:9100 (la impresora)
+
+IMPORTANTE: El PC Windows debe estar encendido para que funcione la VPN.
+
+================================================================================
+

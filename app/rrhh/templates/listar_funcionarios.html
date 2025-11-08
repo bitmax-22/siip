@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}SIIP - {{ titulo }}{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .main-container {
+            padding-top: 76px; /* 56px de navbar + 20px de margen */
+            padding-bottom: 20px;
+            background-image: linear-gradient(to right, #4b6cb7, #182848);
+            color: #e0e0e0;
+            min-height: calc(100vh - 56px); /* Ocupa al menos el alto de la ventana menos el footer */
+        }
+        .table-dark-custom {
+            background-color: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+        }
+        .table-dark-custom th, .table-dark-custom td {
+            border-color: rgba(255, 255, 255, 0.15);
+            vertical-align: middle;
+        }
+        .table-dark-custom thead th {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .btn-action {
+            margin-right: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-white">{{ titulo }}</h2>
+        <div>
+            <a href="{{ url_for('rrhh.cargar_excel') }}" class="btn btn-primary me-2">
+                <i class="fas fa-file-excel"></i> Cargar desde Excel
+            </a>
+            <a href="{{ url_for('rrhh.registrar_funcionario') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Registrar Nuevo Funcionario
+            </a>
+        </div>
+    </div>
+
+    {% set status_colors = {
+        'Activo': 'bg-success',
+        'De Reposo': 'bg-info',
+        'De Permiso': 'bg-warning text-dark',
+        'Retardo': 'bg-warning text-dark',
+        'Jubilado': 'bg-secondary',
+        'Egresado': 'bg-danger',
+        'Pasivo': 'bg-dark'
+    } %}
+
+    <div class="table-responsive">
+        <table class="table table-dark-custom table-hover">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">Nº</th>
+                    <th style="width: 10%;">Cédula</th>
+                    <th>Nombre Completo</th>
+                    <th style="width: 20%;">Cargo</th>
+                    <th style="width: 10%;">Estatus</th>
+                    <th style="width: 15%;" class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for funcionario in funcionarios %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ funcionario.cedula }}</td>
+                    <td><a href="{{ url_for('rrhh.ver_funcionario', funcionario_id=funcionario.id) }}" class="text-white" style="text-decoration: none;">{{ funcionario.nombres }} {{ funcionario.apellidos }}</a></td>
+                    <td>{{ funcionario.cargo_adscripcion }}</td>
+                    <td><span class="badge {{ status_colors.get(funcionario.estatus_actual, 'bg-light text-dark') }}">{{ funcionario.estatus_actual }}</span></td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-warning btn-action" data-bs-toggle="modal" data-bs-target="#estatusModal-{{ funcionario.id }}" title="Cambiar Estatus">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-action" data-bs-toggle="modal" data-bs-target="#eliminarFuncionarioModal-{{ funcionario.id }}" title="Eliminar Funcionario">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+                <!-- Incluir los modales para cada funcionario -->
+                {% include '_modals.html' %}
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">No hay funcionarios activos registrados en esta categoría.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

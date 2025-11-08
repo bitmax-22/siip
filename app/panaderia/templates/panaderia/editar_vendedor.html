@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Editar Vendedor: {{ vendedor.nombre }}</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.csrf_token }}
+                <div class="mb-3">
+                    {{ form.nombre.label(class="form-label") }}
+                    {{ form.nombre(class="form-control") }}
+                    {% if form.nombre.errors %}
+                        <div class="text-danger">
+                            {% for error in form.nombre.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.telefono.label(class="form-label") }}
+                    {{ form.telefono(class="form-control") }}
+                    {% if form.telefono.errors %}
+                        <div class="text-danger">
+                            {% for error in form.telefono.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.direccion.label(class="form-label") }}
+                    {{ form.direccion(class="form-control") }}
+                    {% if form.direccion.errors %}
+                        <div class="text-danger">
+                            {% for error in form.direccion.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('panaderia.vendedores') }}" class="btn btn-secondary ms-2">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

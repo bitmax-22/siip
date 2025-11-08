@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Editando: {{ producto.nombre }}</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('panaderia.editar_producto', producto_id=producto.id) }}">
+                {{ form.csrf_token }}
+                <div class="mb-3">
+                    {{ form.nombre.label(class="form-label") }}
+                    {{ form.nombre(class="form-control") }}
+                    {% if form.nombre.errors %}
+                        <div class="text-danger">
+                            {% for error in form.nombre.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.costo_produccion.label(class="form-label") }}
+                    {{ form.costo_produccion(class="form-control", type="number", step="0.01") }}
+                    {% if form.costo_produccion.errors %}
+                        <div class="text-danger">
+                            {% for error in form.costo_produccion.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.precio_regular.label(class="form-label") }}
+                    {{ form.precio_regular(class="form-control", type="number", step="0.01") }}
+                    {% if form.precio_regular.errors %}
+                        <div class="text-danger">
+                            {% for error in form.precio_regular.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.precio_minimo.label(class="form-label") }}
+                    {{ form.precio_minimo(class="form-control", type="number", step="0.01") }}
+                    {% if form.precio_minimo.errors %}
+                        <div class="text-danger">
+                            {% for error in form.precio_minimo.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('panaderia.productos') }}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+================================================================================
+  SOLUCIÓN SUPER RÁPIDA: Instalar Tailscale en un PC Windows de la Red
+================================================================================
+
+RouterOS 7.16 no soporta "extra-packages" directamente.
+La forma más rápida es usar un PC Windows de tu red local.
+
+¿TIENES UN PC WINDOWS EN TU RED LOCAL?
+----------------------------------------
+Si SÍ → Sigue estos pasos (5 minutos)
+Si NO → Tendremos que descargar containers manualmente (más complejo)
+
+================================================================================
+PASO 1: EN EL PC WINDOWS DE LA RED LOCAL
+================================================================================
+
+1. Abrir PowerShell como Administrador
+
+2. Descargar e instalar Tailscale:
+Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/windows/tailscale-setup-latest.exe" -OutFile "$env:TEMP\tailscale-setup.exe"
+Start-Process -FilePath "$env:TEMP\tailscale-setup.exe" -ArgumentList "-q" -Wait
+
+3. Abrir Tailscale desde el menú Inicio
+
+4. Iniciar sesión con la MISMA cuenta que usaste en el VPS
+
+5. Click "Connect"
+
+6. Configurar como subnet router:
+tailscale up --advertise-routes=192.168.88.0/24
+
+================================================================================
+PASO 2: ACTIVAR RUTAS EN TAILSCALE DASHBOARD
+================================================================================
+
+1. Abrir: https://login.tailscale.com/admin/machines
+
+2. Click en tu PC Windows
+
+3. Click "..." → "Edit route settings"
+
+4. Activar "Advertise Subnet Routes"
+
+5. Marcar: 192.168.88.0/24
+
+6. Click "Save"
+
+================================================================================
+PASO 3: EN EL VPS
+================================================================================
+
+tailscale up --accept-routes
+
+Verificar:
+Test-Connection 192.168.88.128
+
+¡LISTO! ✅
+
+================================================================================
+NOTA IMPORTANTE
+================================================================================
+
+El PC Windows debe estar encendido para que funcione la VPN.
+Si el PC se apaga, el VPS perderá acceso a la red 192.168.88.x
+
+================================================================================
+

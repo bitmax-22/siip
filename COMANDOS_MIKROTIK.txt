@@ -1,0 +1,83 @@
+================================================================================
+  COMANDOS PARA INSTALAR TAILSCALE EN MIKROTIK
+================================================================================
+
+PASO 1: EN WINBOX (Interface Gráfica)
+--------------------------------------
+1. Abre Winbox
+2. Conéctate a tu MikroTik
+3. Ve a: System → Packages
+4. Click: Check For Updates
+5. Espera a que cargue
+6. Busca: "tailscale"
+7. Si aparece:
+   → Click en "tailscale"
+   → Click "Download & Install"
+8. SI NO APARECE → sigue abajo
+
+--------------------------------------------------------------------
+
+PASO 2: VIA TERMINAL (Si no aparece en Winbox)
+-----------------------------------------------
+# En Winbox → Terminal, ejecuta:
+
+# Primero detecta la arquitectura de tu MikroTik:
+/system resource print
+
+# Luego descarga según tu arquitectura:
+
+# Si es ARM64:
+/tool fetch url="https://pkgs.tailscale.com/stable/mikrotik/tailscale-latest-arm64.ipk" dst="tailscale.ipk"
+
+# Si es ARM (32 bits) - hEX, hAP, etc:
+/tool fetch url="https://pkgs.tailscale.com/stable/mikrotik/tailscale-latest-arm.ipk" dst="tailscale.ipk"
+
+# Si es MIPSBE (RouterOS v6/v7):
+/tool fetch url="https://pkgs.tailscale.com/stable/mikrotik/tailscale-latest-mipsbe.ipk" dst="tailscale.ipk"
+
+# Si es i386 (arquitectura de 32 bits):
+/tool fetch url="https://pkgs.tailscale.com/stable/mikrotik/tailscale-latest-i386.ipk" dst="tailscale.ipk"
+
+# Instalar el paquete descargado:
+/system package install file-name=tailscale.ipk
+
+--------------------------------------------------------------------
+
+PASO 3: CONFIGURAR SUBNET ROUTER
+---------------------------------
+# En Terminal de MikroTik (Winbox → Terminal):
+
+# Crear interfaz Tailscale
+/interface/tailscale add name="tailscale1" mtu=1420
+
+# Configurar con tu auth key (REEMPLAZA la key):
+/interface/tailscale set tailscale1 auth-key=tskey-auth-TU_KEY_AQUI advertise-routes=192.168.88.0/24
+
+# Habilitar interfaz
+/interface/tailscale set tailscale1 disabled=no
+
+# Ver estado
+/interface/tailscale print
+/ip address print
+
+# Ver logs si hay problemas:
+/log print where topics~"tailscale"
+
+--------------------------------------------------------------------
+
+PASO 4: VERIFICAR EN TAILSCALE
+-------------------------------
+1. Abre: https://login.tailscale.com/admin/machines
+2. Deberías ver:
+   - Tu MikroTik listado
+   - Con rutas: 192.168.88.0/24
+
+Si aparece → ¡ÉXITO! ✅
+
+Si NO aparece:
+→ Verifica que la interfaz esté habilitada
+→ Verifica que usaste la auth key correcta
+→ Revisa los logs: /log print where topics~"tailscale"
+
+================================================================================
+

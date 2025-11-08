@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Resumen Diario de Producción y Ventas</h5>
+        </div>
+        <div class="card-body">
+            {% if reporte %}
+                {% for dia in reporte %}
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Fecha: {{ dia.fecha }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Producción del Día:</h6>
+                        {% if dia.produccion.productos %}
+                        <ul class="list-group mb-3">
+                            {% for prod_name, data in dia.produccion.productos.items() %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ prod_name }}: {{ data.producido }} unidades
+                                <span class="badge bg-info rounded-pill">Costo: {{ "%.2f"|format(data.costo) }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <p><strong>Total Producido (unidades):</strong> {{ dia.produccion.total_producido_dia }}</p>
+                        <p><strong>Costo Total de Producción:</strong> {{ "%.2f"|format(dia.produccion.costo_total_dia) }}</p>
+                        {% else %}
+                        <p>No hay producción registrada para esta fecha.</p>
+                        {% endif %}
+
+                        <h6 class="mt-4">Ventas del Día:</h6>
+                        {% if dia.ventas.productos %}
+                        <ul class="list-group mb-3">
+                            {% for prod_name, data in dia.ventas.productos.items() %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ prod_name }}: {{ data.vendido }} unidades
+                                <span class="badge bg-success rounded-pill">Ingreso: {{ "%.2f"|format(data.ingreso) }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <p><strong>Total Vendido (unidades):</strong> {{ dia.ventas.total_vendido_dia }}</p>
+                        <p><strong>Ingreso Total por Ventas:</strong> {{ "%.2f"|format(dia.ventas.ingreso_total_dia) }}</p>
+                        {% else %}
+                        <p>No hay ventas registradas para esta fecha.</p>
+                        {% endif %}
+
+                        <h6 class="mt-4">Resumen Combinado por Producto:</h6>
+                        {% if dia.productos_combinados %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Producido</th>
+                                        <th>Costo Prod.</th>
+                                        <th>Vendido</th>
+                                        <th>Ingreso Venta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prod_name, data in dia.productos_combinados.items() %}
+                                    <tr>
+                                        <td>{{ prod_name }}</td>
+                                        <td>{{ data.producido }}</td>
+                                        <td>{{ "%.2f"|format(data.costo) }}</td>
+                                        <td>{{ data.vendido }}</td>
+                                        <td>{{ "%.2f"|format(data.ingreso) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p>No hay datos combinados para esta fecha.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p>No hay datos de producción o ventas para generar el reporte diario.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

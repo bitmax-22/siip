@@ -1,0 +1,106 @@
+Esto es una descripción de cada uno de los archivos principales de la aplicación SIIP, explicando su función:
+
+c:\Users\Administrator\Desktop\SIIP\run.py
+
+Propósito: Este es el script principal que se ejecuta para iniciar tu aplicación Flask.
+Maneja:
+Importa la función create_app desde el paquete app.
+Llama a create_app() para crear una instancia de la aplicación Flask.
+Si el script se ejecuta directamente (no importado como módulo), inicia el servidor de desarrollo de Flask (app.run()).
+Configura el modo debug y el host en el que la aplicación escuchará las peticiones.
+c:\Users\Administrator\Desktop\SIIP\config.py
+
+Propósito: Centraliza todas las configuraciones de la aplicación.
+Maneja:
+Carga variables de entorno desde un archivo .env (si existe) para mantener la información sensible fuera del código.
+Define una clase Config que contiene:
+SECRET_KEY: Clave secreta para la seguridad de las sesiones y otros fines criptográficos.
+SQLALCHEMY_DATABASE_URI: URL de conexión a la base de datos (SQLite en este caso).
+SQLALCHEMY_TRACK_MODIFICATIONS: Configuración de SQLAlchemy.
+SEND_FILE_MAX_AGE_DEFAULT: Controla el caché para archivos enviados.
+TEMPLATES_AUTO_RELOAD: Recarga automáticamente las plantillas durante el desarrollo.
+Rutas a carpetas importantes como REPORTS_FOLDER, RESOURCES_FOLDER, PHOTOS_FOLDER.
+Configuraciones para la API de Google y Gemini, como GOOGLE_API_KEY, SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, SHEET_RANGE y SCOPES.
+c:\Users\Administrator\Desktop\SIIP\app\__init__.py (Archivo no proporcionado, pero su estructura es estándar y se infiere)
+
+Propósito: Inicializa el paquete app de Flask. Define la función fábrica create_app que construye y configura la aplicación Flask.
+Maneja:
+Creación de la instancia principal de la aplicación Flask.
+Carga de la configuración desde el objeto Config (definido en config.py).
+Inicialización de extensiones de Flask (como SQLAlchemy, LoginManager, etc., aunque no se ven todas en el contexto actual).
+Registro de los Blueprints de la aplicación (como auth_bp y chat_bp).
+Podría incluir la creación inicial de tablas de la base de datos o la configuración de logging.
+c:\Users\Administrator\Desktop\SIIP\app\auth.py (Archivo no proporcionado, pero su existencia se infiere por from ..auth import login_required_custom)
+
+Propósito: Gestiona la autenticación y autorización de usuarios.
+Maneja:
+Definición del modelo de usuario (probablemente una clase User con campos como id, username, password_hash).
+Rutas para el inicio de sesión (/login), cierre de sesión (/logout), y posiblemente registro de usuarios (/register).
+Lógica para verificar credenciales, manejar sesiones de usuario.
+Decoradores como login_required_custom para proteger rutas que requieren que el usuario esté autenticado.
+c:\Users\Administrator\Desktop\SIIP\app\utils.py (Archivo no proporcionado, pero su existencia se infiere por from ..utils import ...)
+
+Propósito: Contiene funciones de utilidad reutilizables en diferentes partes de la aplicación.
+Maneja:
+Funciones como format_value_for_display para formatear datos antes de mostrarlos al usuario (ej. fechas).
+La función default_serializer para convertir objetos complejos (como tipos de Pandas/NumPy) a formatos serializables por JSON.
+Cualquier otra función auxiliar que no encaje directamente en la lógica de una ruta o modelo específico.
+c:\Users\Administrator\Desktop\SIIP\app\reports.py (Archivo no proporcionado, pero su existencia se infiere por from ..reports import ...)
+
+Propósito: Encapsula la lógica para generar diferentes tipos de reportes.
+Maneja:
+La función generar_ficha_jpg que toma datos de un privado de libertad y crea una imagen JPG con su ficha jurídica.
+La función generar_reporte_pdf que toma un DataFrame de Pandas y genera un reporte en formato PDF.
+Podría incluir otras funciones para generar reportes en diferentes formatos o con diferentes estructuras.
+c:\Users\Administrator\Desktop\SIIP\app\chat\__init__.py
+
+Propósito: Inicializa el paquete chat como un Blueprint de Flask.
+Maneja:
+Crea una instancia de Blueprint llamada chat_bp.
+Importa los módulos de rutas (routes.py, dashboard_routes.py, general_routes.py) para que las rutas definidas en ellos se registren bajo este blueprint. Esto es crucial para que Flask pueda encontrar y mapear las URLs a las funciones correspondientes.
+c:\Users\Administrator\Desktop\SIIP\app\chat\routes.py
+
+Propósito: Contiene las rutas y la lógica principal para la funcionalidad del chat interactivo y la descarga de reportes.
+Maneja:
+La ruta /send_message (POST):
+Recibe los mensajes del usuario.
+Mantiene un historial de conversación en la sesión.
+Interactúa con message_logic.py para procesar el mensaje (búsqueda por cédula, nombre, detección de intención de reporte).
+Llama al modelo Gemini para la comprensión del lenguaje natural (NLU) en solicitudes de reportes o para respuestas generales.
+Construye y devuelve la respuesta del bot.
+La ruta /reports/<filename> (GET):
+Permite a los usuarios descargar los reportes (PDF, JPG) generados previamente.
+Sirve archivos desde la carpeta REPORTS_FOLDER de manera segura.
+Importa funciones lógicas desde message_logic.py y funciones de generación de reportes desde app.reports.
+c:\Users\Administrator\Desktop\SIIP\app\chat\general_routes.py
+
+Propósito: Contiene rutas más generales o auxiliares relacionadas con la interfaz del chat y el servicio de archivos estáticos.
+Maneja:
+La ruta / (raíz): Redirige a la página principal del chat (/chat).
+La ruta /chat: Renderiza la plantilla HTML principal de la interfaz del chat (chat.html).
+La ruta /get_history: Proporciona el historial de la conversación actual en formato JSON, probablemente para ser cargado dinámicamente en la interfaz.
+Rutas /static/resources/<path:filename> y /static/photos/<path:filename>: Sirven archivos estáticos como imágenes, CSS, o JavaScript que se utilizan en las plantillas, desde las carpetas RESOURCES_FOLDER y PHOTOS_FOLDER respectivamente.
+c:\Users\Administrator\Desktop\SIIP\app\chat\message_logic.py
+
+Propósito: Alberga la lógica de negocio detallada para procesar los mensajes del usuario y las interacciones con los datos del SIIP. Este archivo es fundamental para la inteligencia del chatbot.
+Maneja:
+_validar_y_normalizar_cedula_capturada: Valida y formatea números de cédula.
+_buscar_por_nombre: Realiza búsquedas en el DataFrame de SIIP por nombres o partes de nombres.
+_parse_user_choice: Interpreta la selección numérica o textual del usuario cuando se presentan múltiples opciones.
+_normalizar_partes_nombre: Prepara los nombres para una búsqueda más efectiva.
+_buscar_nombres_similares: Utiliza fuzzywuzzy para encontrar nombres similares si no hay una coincidencia exacta.
+_procesar_solicitud_cedula: Lógica central para cuando se identifica una cédula. Decide si generar una ficha JPG o preparar un contexto para que Gemini muestre la información.
+Interactúa con app.reports para generar la ficha JPG.
+Prepara los prompts para Gemini cuando se necesita presentar información de una cédula específica.
+c:\Users\Administrator\Desktop\SIIP\app\chat\dashboard_routes.py
+
+Propósito: Contiene la ruta y toda la lógica necesaria para generar y mostrar el dashboard de estadísticas del SIIP.
+Maneja:
+La ruta /dashboard:
+Obtiene los datos del SIIP (probablemente un DataFrame de Pandas cargado en la configuración de la aplicación).
+Realiza numerosos cálculos y agregaciones sobre los datos para obtener estadísticas clave (total de PDLs, procesados, penados, movimientos diarios, distribución por edad, delito, ubicación, etc.).
+Prepara los datos en un formato adecuado para ser consumidos por gráficos en la plantilla del dashboard (usando librerías como Chart.js).
+Renderiza la plantilla dashboard.html, pasando los datos calculados.
+Utiliza pandas extensivamente para la manipulación y análisis de datos.
+Maneja la conversión de fechas y la categorización de datos para las visualizaciones.
+Espero que esta documentación te sea útil para entender mejor la estructura y el flujo de tu aplicación. ¡Buen trabajo con la organización!

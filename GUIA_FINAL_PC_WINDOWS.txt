@@ -1,0 +1,159 @@
+================================================================================
+  🎯 GUÍA FINAL: Configurar PC Windows como Subnet Router para Tailscale
+================================================================================
+
+SITUACIÓN:
+----------
+✅ VPS Windows Server: Tailscale YA instalado
+⏳ Necesitas: PC Windows en tu red local 192.168.88.x
+🎯 Objetivo: Conectar VPS → Impresora 192.168.88.128:9100
+
+================================================================================
+PASO 1: EN EL PC WINDOWS DE LA PANADERÍA
+================================================================================
+
+1. Abrir PowerShell como Administrador:
+   - Windows + X
+   - Click "Windows PowerShell (Administrador)"
+
+2. Instalar Tailscale:
+   Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/windows/tailscale-setup-latest.exe" -OutFile "$env:TEMP\tailscale-setup.exe"
+   
+   Start-Process -FilePath "$env:TEMP\tailscale-setup.exe" -ArgumentList "-q" -Wait
+
+3. Abrir Tailscale:
+   - Buscar "Tailscale" en el menú Inicio
+   - Abrir la aplicación
+
+4. Iniciar sesión:
+   - Click "Sign in"
+   - Usar la MISMA cuenta que usaste en el VPS
+   - Click "Connect"
+   - Espera a que conecte (ícono verde)
+
+5. Configurar como subnet router:
+   # Abrir PowerShell como Administrador (otra vez):
+   
+   tailscale up --advertise-routes=192.168.88.0/24
+
+   # Verás un mensaje sobre solicitud de permisos de ruta
+
+================================================================================
+PASO 2: ACTIVAR RUTAS EN DASHBOARD DE TAILSCALE
+================================================================================
+
+1. Abrir navegador web:
+   https://login.tailscale.com/admin/machines
+
+2. Buscar tu PC Windows en la lista
+   - Debería aparecer con nombre como "DESKTOP-XXXXX"
+
+3. Click en tu PC Windows
+
+4. Click en "..." (tres puntos) → "Edit route settings"
+
+5. En "Advertise Subnet Routes":
+   ☑ Activar toggle "Advertise Subnet Routes"
+   ☑ Marcar checkbox: 192.168.88.0/24
+
+6. Click "Save"
+
+7. Verificar que aparezca:
+   - En la columna "Routes" deberías ver: 192.168.88.0/24 ✅
+
+================================================================================
+PASO 3: CONFIGURAR VPS PARA ACEPTAR RUTAS
+================================================================================
+
+EN EL VPS WINDOWS SERVER:
+
+1. Abrir PowerShell como Administrador
+
+2. Ejecutar:
+   tailscale up --accept-routes
+
+3. Ver estado:
+   tailscale status
+   
+   # Deberías ver algo como:
+   # 100.x.x.x  nombre-vps
+   # 100.y.y.y  nombre-pc-local
+   # Routes: 192.168.88.0/24
+
+================================================================================
+PASO 4: PROBAR CONECTIVIDAD
+================================================================================
+
+EN EL VPS:
+
+1. Probar ping a la impresora:
+   Test-Connection 192.168.88.128
+   
+   # Deberías ver 4 respuestas exitosas ✅
+
+2. Probar puerto de impresora:
+   Test-NetConnection -ComputerName 192.168.88.128 -Port 9100
+   
+   # Deberías ver "TcpTestSucceeded : True" ✅
+
+Si ambos comandos dan éxito → ¡VPN funcionando! 🎉
+
+================================================================================
+PASO 5: CONFIGURAR SIIP (SI NECESITAS)
+================================================================================
+
+Tu config.py ya está correcto:
+IMPRESORA_IP = '192.168.88.128'
+
+Solo reinicia SIIP:
+# PowerShell en la carpeta del proyecto:
+python run.py
+
+================================================================================
+PASO 6: HACER QUE EL PC SE CONECTE AUTOMÁTICAMENTE
+================================================================================
+
+Para que Tailscale se conecte al iniciar Windows:
+
+1. En el PC Windows, abrir Tailscale
+2. Settings (Configuración)
+3. Activar "Run on system startup"
+4. Activar "Run as a Windows service"
+
+Ahora el PC se conectará automáticamente al boot.
+
+================================================================================
+⚠️ IMPORTANTE
+================================================================================
+
+CRÍTICO: El PC Windows DEBE estar encendido para que la VPN funcione.
+
+Si el PC se apaga:
+❌ El VPS perderá acceso a 192.168.88.x
+❌ La impresión remota dejará de funcionar
+❌ El fallback PDF se activará automáticamente
+
+RECOMENDACIÓN:
+- Configurar Windows para NO apagar nunca (Power Settings)
+- O usar Wake-on-LAN si es posible
+- O dejar el PC encendido 24/7
+
+================================================================================
+RESUMEN FINAL
+================================================================================
+
+CHECKLIST:
+[ ] Tailscale instalado en PC Windows
+[ ] PC conectado a Tailscale
+[ ] Ruta 192.168.88.0/24 anunciada
+[ ] Ruta aprobada en dashboard
+[ ] VPS configurado con --accept-routes
+[ ] Test-Connection 192.168.88.128 funciona
+[ ] Test-NetConnection puerto 9100 funciona
+[ ] SIIP reiniciado
+[ ] Pedido de prueba imprimiendo ✅
+
+Si todos los ítems están marcados → ¡COMPLETO! 🎊
+
+================================================================================
+

@@ -1,0 +1,295 @@
+
+{% extends "base.html" %}
+
+{% block title %}SIIP - Chat Asistente{% endblock %}
+
+{% block styles %}
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('chat.serve_resource', filename='LOGO ACCESO.png') }}">
+    <!-- Apple Touch Icon (para guardar en pantalla de inicio) -->
+    <link rel="apple-touch-icon" href="{{ url_for('chat.serve_resource', filename='LOGO MSP.png') }}">
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <!-- Theme Color (para barra de estado/navegador en móvil) -->
+    <meta name="theme-color" content="#4b6cb7">
+    <!-- CSS específico de Chat -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="chat-page-wrapper">
+    <div class="chat-full-page">
+        
+        {# Incluir mensajes flash aquí para que estén en el flujo del contenido #}
+        {# Esto asume que tienes un template app/templates/_flash_messages.html #}
+        {# Si no lo tienes, puedes crear uno o quitar esta línea temporalmente #}
+        <div class="container-fluid px-0"> {# Para que los flash messages ocupen el ancho del wrapper si son de bootstrap #}
+            {% include '_flash_messages.html' %}
+        </div>
+        
+        <div class="chat-container" id="chat-container">
+            <!-- Los mensajes se cargarán aquí -->
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Escribe tu mensaje aquí..." autocomplete="off">
+            <button type="button" id="voice-command-button" title="Comando de Voz">🎤</button>
+            <button type="button" id="send-button">Enviar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // Esperar a que el DOM esté completamente cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatContainer = document.getElementById('chat-container');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+            const voiceCommandButton = document.getElementById('voice-command-button');
+
+        function addMessage(sender, text, type = 'normal') { // Añadido tipo para mensajes de sistema/error
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            if (sender === 'Usuario') {
+                messageDiv.classList.add('user-message');
+                messageDiv.textContent = text; // Mostrar texto plano para usuario
+            } else { // Sucre o Sistema
+                messageDiv.classList.add('bot-message');
+                if (type === 'system-error') {
+                    messageDiv.style.backgroundColor = 'rgba(220, 53, 69, 0.3)'; // Un rojo suave para errores
+                    messageDiv.style.color = '#f8d7da';
+                } else if (type === 'system-info') {
+                     messageDiv.style.backgroundColor = 'rgba(23, 162, 184, 0.3)'; // Un azul/cian suave para info
+                     messageDiv.style.color = '#d1ecf1';
+                }
+                messageDiv.innerHTML = text; // Usar innerHTML para renderizar el HTML (ej. enlaces) del bot
+            }
+            chatContainer.appendChild(messageDiv);
+            if (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100) {
+                 chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        function loadHistory() {
+            fetch('/get_history')
+                .then(response => response.json())
+                .then(data => {
+                    chatContainer.innerHTML = ''; 
+                    if (data.history) {
+                        data.history.forEach(msg => {
+                            const [sender, ...textParts] = msg.split(': ');
+                            const text = textParts.join(': ');
+                            addMessage(sender, text);
+                        });
+                         chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                })
+                .catch(error => console.error('Error cargando historial:', error));
+        }
+
+        function sendMessage() {
+            const messageText = messageInput.value.trim();
+            if (messageText === '') return;
+
+            addMessage('Usuario', messageText);
+            messageInput.value = '';
+            messageInput.focus(); 
+
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('message', 'bot-message', 'typing-indicator');
+            typingDiv.innerHTML = '...'; 
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+
+            fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: messageText }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const existingTypingIndicator = chatContainer.querySelector('.typing-indicator');
+                if (existingTypingIndicator) {
+                    chatContainer.removeChild(existingTypingIndicator);
+                }
+                if (data.reply) {
+                    addMessage('Sucre', data.reply);
+                    // Opcional: Leer la respuesta del bot
+                    // speakText(data.reply); 
+                } else if (data.error) {
+                    console.error("Error del servidor:", data.error);
+                    addMessage('Sistema', `Error: ${data.error}`, 'system-error');
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                 const existingTypingIndicator = chatContainer.querySelector('.typing-indicator');
+                if (existingTypingIndicator) {
+                    chatContainer.removeChild(existingTypingIndicator);
+                }
+                addMessage('Sucre', 'Lo siento, hubo un error de conexión.', 'system-error');
+            });
+        }
+
+        // Event listener para el botón de enviar
+        if (sendButton) {
+            sendButton.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                sendMessage();
+                return false;
+            };
+        }
+
+        // Event listener para Enter en el input
+        if (messageInput) {
+            messageInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+
+        loadHistory();
+
+        // El cierre automático de alertas flash de Bootstrap se maneja si _flash_messages.html lo implementa o si se añade JS específico.
+        let inactivityTimer;
+        const inactivityTime = 5 * 60 * 1000; 
+
+        function logoutUser() {
+            console.log("¡Tiempo de inactividad alcanzado! Redirigiendo a login...");
+            window.location.href = "{{ url_for('auth.login') }}";
+        }
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer); 
+            inactivityTimer = setTimeout(logoutUser, inactivityTime); 
+            // console.log("Timer de inactividad reseteado."); 
+        }
+
+        window.onload = resetInactivityTimer; 
+        document.onmousemove = resetInactivityTimer;
+        document.onkeypress = resetInactivityTimer;
+        document.onclick = resetInactivityTimer;
+        document.onscroll = resetInactivityTimer; 
+        document.ontouchstart = resetInactivityTimer; 
+
+        // --- Funcionalidad de Comando de Voz ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; 
+            recognition.lang = 'es-VE';    
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            voiceCommandButton.addEventListener('click', () => {
+                if (recognition && (!recognition.state || recognition.state !== 'listening')) { // Verificación de estado más robusta
+                    try {
+                        recognition.start();
+                        voiceCommandButton.textContent = '🗣️'; 
+                        voiceCommandButton.disabled = true;
+                        console.log("Reconocimiento de voz iniciado.");
+                    } catch (error) {
+                        console.error("Error al iniciar el reconocimiento de voz:", error);
+                        addMessage('Sistema', "No se pudo iniciar el reconocimiento de voz. Asegúrate de haber concedido permiso para el micrófono.", 'system-error');
+                        voiceCommandButton.textContent = '🎤';
+                        voiceCommandButton.disabled = false;
+                    }
+                } else if (recognition) {
+                    recognition.stop(); 
+                    console.log("Reconocimiento de voz detenido manualmente.");
+                }
+            });
+
+            recognition.onstart = () => {
+                console.log("Escuchando...");
+                // Podrías añadir un mensaje visual "Escuchando..." en el chat si quieres
+                // addMessage('Sistema', 'Escuchando...', 'system-info');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                console.log("Texto reconocido:", transcript);
+                messageInput.value = transcript; 
+
+                if (transcript.trim() !== "") {
+                    sendMessage(); // Llama a tu función existente para enviar el mensaje
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Error en el reconocimiento de voz:", event.error);
+                let errorMessage = "Error en el reconocimiento de voz.";
+                if (event.error === 'no-speech') {
+                    errorMessage = "No se detectó voz. Intenta de nuevo.";
+                } else if (event.error === 'audio-capture') {
+                    errorMessage = "Error al capturar audio. Verifica tu micrófono.";
+                } else if (event.error === 'not-allowed') {
+                    errorMessage = "Permiso para el micrófono denegado. Habilítalo en la configuración del navegador.";
+                } else if (event.error === 'network') {
+                    errorMessage = "Error de red durante el reconocimiento de voz. Verifica tu conexión.";
+                }
+                addMessage('Sistema', errorMessage, 'system-error');
+            };
+
+            recognition.onend = () => {
+                console.log("Reconocimiento de voz finalizado.");
+                voiceCommandButton.textContent = '🎤'; 
+                voiceCommandButton.disabled = false;
+                // Quitar mensaje "Escuchando..." si lo añadiste
+                // const listeningMsg = chatContainer.querySelector('.system-info'); // Asume una clase
+                // if (listeningMsg && listeningMsg.textContent.includes('Escuchando')) {
+                //    chatContainer.removeChild(listeningMsg);
+                // }
+            };
+
+        } else {
+            voiceCommandButton.style.display = 'none'; 
+            console.warn("La API de Reconocimiento de Voz no es compatible con este navegador.");
+            // Podrías mostrar un mensaje al usuario una vez si quieres
+            // addMessage('Sistema', "Tu navegador no soporta comandos de voz.", 'system-info');
+        }
+
+        // --- (Opcional) Funcionalidad de Síntesis de Voz (Leer respuesta del bot) ---
+        /*
+        const speechSynthesis = window.speechSynthesis;
+
+        function speakText(text) {
+            if (speechSynthesis && text) {
+                // Limpiar HTML básico de la respuesta para una mejor lectura
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = text;
+                const cleanText = tempDiv.textContent || tempDiv.innerText || "";
+                
+                if (cleanText.trim() === "") return;
+
+                // Cancelar cualquier habla anterior para evitar superposiciones
+                speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'es-VE'; // Español de Venezuela
+                utterance.pitch = 1;
+                utterance.rate = 1; // Puedes ajustar la velocidad
+                utterance.volume = 1;
+                speechSynthesis.speak(utterance);
+            }
+        }
+        // Para usarlo, descomenta la línea `speakText(data.reply);` en la función sendMessage
+        // y asegúrate de que `data.reply` contenga el texto que quieres leer.
+        */
+
+        }); // Fin del DOMContentLoaded
+    </script>
+{% endblock %}
+
+{% block page_footer %}
+{% endblock page_footer %}

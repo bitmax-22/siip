@@ -1,0 +1,163 @@
+/* 
+ * Estilos Globales - Solo estilos comunes a todas las páginas
+ * Cada módulo tiene su propio archivo CSS independiente:
+ * - chat.css (Chat Asistente)
+ * - dashboard.css (Situación Actual)
+ * - resena.css (Reseña Fotográfica)
+ */
+
+/* Estilos comunes básicos */
+* {
+    box-sizing: border-box;
+}
+
+/* Los estilos del login se mantienen aquí porque no usa base.html */
+.login-page-body {
+    font-family: sans-serif;
+    margin: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.login-container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 400px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    /* Usamos solo el margen inferior mayor */
+    margin-bottom: 30px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    /* Usamos solo el borde más suave */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease; /* Transición suave para el foco */
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #764ba2; /* Color del borde al enfocar */
+    outline: none; /* Quita el borde por defecto del navegador */
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    /* Usamos solo el fondo con degradado */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: opacity 0.3s ease, box-shadow 0.3s ease; /* Añadida transición para el hover */
+}
+
+button:hover {
+    /* Mantenemos solo los estilos del hover deseados */
+    opacity: 0.9;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.error-message {
+    color: red;
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: bold; /* Hacer el mensaje de error más visible */
+}
+
+/* --- Estilos para el Chat (los dejamos aquí para cuando los usemos) --- */
+.chat-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+#chatbox {
+    border: 1px solid #ccc;
+    height: 300px; /* Puedes ajustar esta altura */
+    overflow-y: scroll;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+#userInput {
+    display: flex;
+}
+
+#message {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px 0 0 4px;
+    margin-right: -1px;
+    border-right: none; /* Para que el borde no se duplique con el botón */
+}
+
+#userInput button {
+    border-radius: 0 4px 4px 0;
+    width: auto;
+    padding: 10px 15px;
+    /* Hereda el fondo del estilo general de botón, pero podemos sobreescribirlo si queremos */
+}
+
+/* Estilos para mensajes dentro del chatbox */
+#chatbox p {
+    margin: 8px 0; /* Más espacio entre mensajes */
+    padding: 10px 15px; /* Un poco más de padding */
+    border-radius: 15px; /* Bordes más redondeados */
+    max-width: 80%;
+    word-wrap: break-word;
+    line-height: 1.4; /* Mejor legibilidad */
+}
+
+#chatbox p.user-message {
+    background-color: #dcf8c6;
+    margin-left: auto;
+    text-align: left; /* Mantenemos texto alineado a la izquierda dentro de la burbuja */
+    border-bottom-right-radius: 5px; /* Pequeño detalle visual */
+}
+
+#chatbox p.bot-message {
+    background-color: #e5e5ea;
+    margin-right: auto;
+    text-align: left;
+    border-bottom-left-radius: 5px; /* Pequeño detalle visual */
+}
+
+#chatbox strong {
+    display: block; /* Nombre en línea separada (opcional) */
+    font-size: 0.8em; /* Nombre más pequeño */
+    margin-bottom: 3px;
+    color: #555;
+}

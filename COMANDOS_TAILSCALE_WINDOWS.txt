@@ -1,0 +1,46 @@
+================================================================================
+  INSTALACIÓN RÁPIDA DE TAILSCALE EN WINDOWS SERVER PARA SIIP
+================================================================================
+
+PASO 1: INSTALAR TAILSCALE
+---------------------------
+# Abrir PowerShell como Administrador y ejecutar:
+
+Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/windows/tailscale-setup-latest.exe" -OutFile "$env:TEMP\tailscale-setup.exe"
+Start-Process -FilePath "$env:TEMP\tailscale-setup.exe" -ArgumentList "-q" -Wait
+
+# Luego:
+# 1. Buscar "Tailscale" en el menú Inicio
+# 2. Abrir y click "Sign in"
+# 3. Iniciar sesión con Google/Microsoft
+
+PASO 2: VERIFICAR INSTALACIÓN
+------------------------------
+tailscale status
+
+# Deberías ver tu servidor con IP tipo 100.x.x.x
+
+PASO 3: CONFIGURAR PARA ACEPTAR RUTAS (Si instalas Tailscale en MikroTik)
+--------------------------------------------------------------------------
+tailscale up --accept-routes
+
+PASO 4: VERIFICAR CONECTIVIDAD
+-------------------------------
+# Ver todos los dispositivos
+tailscale status
+
+# Ping a la impresora
+Test-Connection 192.168.88.128
+
+# Probar puerto de impresora
+Test-NetConnection -ComputerName 192.168.88.128 -Port 9100
+
+PASO 5: REINICIAR SIIP
+-----------------------
+# Desde la carpeta del proyecto
+python run.py
+
+================================================================================
+  LISTO! Si Test-Connection funciona, la impresión remota debería funcionar.
+================================================================================
+

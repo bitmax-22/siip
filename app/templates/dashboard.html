@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block title %}SIIP - Situación Actual{% endblock %}
+
+{% block styles %}
+    <!-- Favicon y otros iconos (usando LOGO MSP.png) -->
+    <link rel="icon" type="image/png" href="{{ url_for('chat.serve_resource', filename='LOGO MSP.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('chat.serve_resource', filename='LOGO ACCESO.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#4b6cb7">
+    <!-- CSS específico de Dashboard -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="dashboard-body-styles">
+        {# El padding-top para la navbar fija ya está manejado por el <main> en base.html #}
+        <div class="container dashboard-container"> 
+        <h2>Situación Actual - Resumen Gráfico</h2>
+
+        <!-- Sección de Conteos -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="card text-white count-card h-100" style="background-color: #2a5a9e;"> <!-- Azul más oscuro -->
+                    <div class="card-body">
+                        <h5 class="card-title">Procesados</h5>
+                        <p class="card-text fs-4">{{ dashboard_data.counts.get('procesados_total', 'N/D') }}</p>
+                        <small>Control: {{ dashboard_data.counts.get('procesados_control', '-') }} | Juicio: {{ dashboard_data.counts.get('procesados_juicio', '-') }} | Corte: {{ dashboard_data.counts.get('procesados_corte', '-') }}</small> <!-- Eliminado Otros -->
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <div class="card text-dark count-card h-100" style="background-color: #ffc107;"> <!-- Amarillo para Penados -->
+                    <div class="card-body">
+                        <h5 class="card-title">Penados</h5>
+                        <p class="card-text fs-4">{{ dashboard_data.counts.get('penados_total', 'N/D') }}</p>
+                        <!-- Eliminado (Fase Ejecución) -->
+                    </div>
+                </div>
+            </div>
+            <!-- Placeholders -->
+            <div class="col-lg-2 col-md-4">
+                <div class="card text-white count-card h-100" style="background-color: #28a745;"> <!-- Verde para Transitorios -->
+                    <div class="card-body"><h5 class="card-title">Transitorios</h5><p class="card-text fs-4">{{ dashboard_data.counts.get('transitorios', '0') }}</p></div>
+                </div>
+            </div>
+             <div class="col-lg-2 col-md-4">
+                <div class="card text-white count-card h-100" style="background-color: #dc3545;"> <!-- Rojo -->
+                    <div class="card-body">
+                        <h5 class="card-title">Hospitalizados</h5>
+                        <p class="card-text fs-4">{{ dashboard_data.counts.get('hospitalizados_total', 'N/D') }}</p>
+                        <small class="mt-auto"> <!-- mt-auto para empujar abajo si hay espacio -->
+                            Procesados: {{ dashboard_data.counts.get('hospitalizados_procesados_total', '-') }}
+                            {% if dashboard_data.counts.get('hospitalizados_procesados_total', 0) > 0 %}
+                                (C:{{ dashboard_data.counts.get('hospitalizados_proc_control', '-') }}
+                                J:{{ dashboard_data.counts.get('hospitalizados_proc_juicio', '-') }}
+                                CA:{{ dashboard_data.counts.get('hospitalizados_proc_corte', '-') }})
+                            {% endif %}
+                            <br>Penados: {{ dashboard_data.counts.get('hospitalizados_penados', '-') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+             <div class="col-lg-3 col-md-4">
+                <div class="card text-white bg-dark count-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Total General</h5>
+                        <p class="card-text fs-4">{{ dashboard_data.counts.get('total_general', 'N/D') }}</p>
+                        <!-- Movimientos del día, formato similar a procesados, solo si existen -->
+                        {% set movements = [] %}
+                        {% if dashboard_data.counts.get('libertades', 0) > 0 %}
+                            {# Prueba más simple para libertades #}
+                            {% set libertades_str = "Libertades: <strong>" ~ (dashboard_data.counts.libertades|string) ~ "</strong>" %}
+                            {% set _ = movements.append(libertades_str) %}
+                            <!-- DEBUG LIBERTADES VALOR: {{ dashboard_data.counts.libertades }} -->
+                        {% endif %}
+                        {% if dashboard_data.counts.get('fallecidos', 0) > 0 %}
+                            {% set _ = movements.append("Fallecidos: <strong>" ~ (dashboard_data.counts.fallecidos|string) ~ "</strong>") %}
+                        {% endif %}
+                        {% if dashboard_data.counts.get('fugas', 0) > 0 %}
+                            {% set _ = movements.append("Fugas: <strong>" ~ (dashboard_data.counts.fugas|string) ~ "</strong>") %}
+                        {% endif %}
+                        {# Nuevos movimientos del día #}
+                        {% if dashboard_data.counts.get('ingresos_interpenales', 0) > 0 %}
+                            {% set _ = movements.append("Ing. Interpenal: <strong>" ~ (dashboard_data.counts.ingresos_interpenales|string) ~ "</strong>") %}
+                        {% endif %}
+                        {% if dashboard_data.counts.get('ingresos_comisarias', 0) > 0 %}
+                            {% set _ = movements.append("Ing. Comisaría: <strong>" ~ (dashboard_data.counts.ingresos_comisarias|string) ~ "</strong>") %}
+                        {% endif %}
+                        {% if dashboard_data.counts.get('egresos_interpenales', 0) > 0 %}
+                            {% set _ = movements.append("Egr. Interpenal: <strong>" ~ (dashboard_data.counts.egresos_interpenales|string) ~ "</strong>") %}
+                        {% endif %}
+                        {% if dashboard_data.counts.get('egresos_comisarias', 0) > 0 %}
+                            {% set _ = movements.append("Egr. Comisaría: <strong>" ~ (dashboard_data.counts.egresos_comisarias|string) ~ "</strong>") %}
+                        {% endif %}
+                        {% if dashboard_data.counts.get('resguardos', 0) > 0 %}
+                            {% set _ = movements.append("Resguardos: <strong>" ~ (dashboard_data.counts.resguardos|string) ~ "</strong>") %}
+                        {% endif %}
+                        {% if dashboard_data.counts.get('depositos', 0) > 0 %}
+                            {% set _ = movements.append("Depósitos: <strong>" ~ (dashboard_data.counts.depositos|string) ~ "</strong>") %}
+                        {% endif %}
+
+                        <!-- DEBUG: {{ movements }} -->
+
+                        {% if movements %}
+                        <small class="d-block">Movimientos Hoy:</small> {# Título para la sección de movimientos #}
+                        <small>{{ movements | join(' | ') | safe }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mensajes Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Fila 1 de Gráficos -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <canvas id="procVsPenChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <!-- Contenedor del gráfico de Distribución por Estado con ID para estilos -->
+                <div class="chart-container" id="distribucionEstadoContainer">
+                    <canvas id="distribucionEstadoCondicionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Fila 2 de Gráficos -->
+        <div class="row mt-4">
+             <div class="col-lg-7 col-md-12">
+                <div class="chart-container">
+                    <canvas id="ubicacionChart"></canvas>
+                </div>
+            </div>
+             <div class="col-lg-5 col-md-12">
+                <div class="chart-container">
+                    <canvas id="nacionalidadChart"></canvas>
+                </div>
+            </div>
+        </div>
+         <!-- Fila 3 de Gráficos -->
+        <div class="row mt-4">
+             <div class="col-md-7">
+                <div class="chart-container">
+                    <canvas id="delitosChart"></canvas>
+                </div>
+            </div>
+             <div class="col-md-5">
+                <div class="chart-container">
+                    <canvas id="edadChart"></canvas> <!-- Este es el de grupos de edad -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Nueva Fila de Tarjetas Adicionales -->
+        <div class="row mt-4">
+            <!-- Tarjeta Adicional 1 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card text-white count-card h-100" style="background-color: #6c757d;"> <!-- Gris (Bootstrap secondary) -->
+                    <div class="card-body">
+                        <h5 class="card-title">PDL Pena Cumplida</h5>
+                        <p class="card-text fs-4">{{ dashboard_data.counts.get('pena_cumplida_redencion_total', 'N/D') }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Tarjeta Adicional 2 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card text-white count-card h-100" style="background-color: #17a2b8;"> <!-- Turquesa (Bootstrap info) -->
+                    <div class="card-body">
+                        <h5 class="card-title">PDL 75% Cumplido con Redención</h5>
+                        <p class="card-text fs-4">{{ dashboard_data.counts.get('setentaycinco_redencion_total', 'N/D') }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Tarjeta Adicional 3 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card text-white count-card h-100" style="background-color: #6f42c1;"> <!-- Púrpura (Bootstrap purple) -->
+                    <div class="card-body">
+                        <h5 class="card-title">PDL 75% físico Cumplido</h5>
+                        <p class="card-text fs-4">{{ dashboard_data.counts.get('setentaycinco_fisico_total', 'N/D') }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Tarjeta Adicional 4 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card text-white count-card h-100" style="background-color: #fd7e14;"> <!-- Naranja (Bootstrap orange) -->
+                    <div class="card-body">
+                        <h5 class="card-title">Penados Sin Cómputo</h5>
+                        <p class="card-text fs-4">{{ dashboard_data.counts.get('penados_sin_computo_total', 'N/D') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <!-- Scripts específicos para el dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script>
+        // Obtener los datos pasados desde Flask
+        const dashboardData = JSON.parse('{{ dashboard_data_json | safe }}' || '{}'); // Añadir fallback por si falla
+        const chartData = dashboardData.charts || {}; // Acceder a la sub-clave 'charts'
+
+        // Función auxiliar para mostrar mensaje si no hay datos
+        function showNoDataMessage(canvasId, message) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#6c757d"; // Color gris
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar por si acaso
+            // Intentar obtener dimensiones del contenedor, no solo del canvas
+            const container = canvas.parentNode; // Usar parentNode
+            const containerWidth = container.clientWidth || canvas.width;
+            const containerHeight = container.clientHeight || canvas.height;
+            ctx.fillText(message, containerWidth / 2, containerHeight / 2);
+        }
+
+        // Registrar el plugin de datalabels globalmente
+        Chart.register(ChartDataLabels);
+
+        // Configurar y renderizar los gráficos
+
+        // 1. Gráfico Procesados - Penados (Doughnut)
+        const ctxProcVsPen = document.getElementById('procVsPenChart').getContext('2d');
+        const procVsPenData = chartData.proc_vs_pen;
+        if (procVsPenData && procVsPenData.values.reduce((a, b) => a + b, 0) > 0) { // Verificar si hay datos
+            new Chart(ctxProcVsPen, {
+                type: 'doughnut',
+                data: {
+                    labels: procVsPenData.labels,
+                    datasets: [{
+                        data: procVsPenData.values,
+                        backgroundColor: [ // Colores de ejemplo
+                            'rgba(0, 86, 179, 0.9)', // Azul más intenso para Procesados
+                            'rgba(255, 204, 0, 0.9)', // Amarillo para Penados
+                        ],
+                        borderColor: '#fff', // Blanco para separar segmentos
+                        borderWidth: 2 // Aumentar borde para mejor separación
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Procesados - Penados' // Título cambiado
+                        },
+                        datalabels: {
+                            color: '#fff', // Color del texto de la etiqueta
+                            textAlign: 'center',
+                            font: {
+                                weight: 'bold'
+                            },
+                            formatter: (value, ctx) => {
+                                const datapoints = ctx.chart.data.datasets[0].data;
+                                const total = datapoints.reduce((total, datapoint) => total + datapoint, 0);
+                                const percentage = (value / total * 100).toFixed(1);
+                                // Mostrar valor y porcentaje
+                                return `${value}\n(${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            showNoDataMessage('procVsPenChart', "No hay datos de condición");
+        }
+
+        // 3. Gráfico PDL por Ubicación (Barra Horizontal)
+        const ctxUbicacion = document.getElementById('ubicacionChart').getContext('2d');
+        const ubicacionDetalladaData = chartData.ubicacion_detallada;
+
+        if (ubicacionDetalladaData && ubicacionDetalladaData.labels.length > 0) {
+            // Generar colores únicos para cada torre para distinguirlas
+            const torresUnicas = [...new Set(ubicacionDetalladaData.torres)];
+            const coloresTorre = {};
+            const baseColores = [
+                'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)',
+                'rgba(199, 199, 199, 0.7)', 'rgba(83, 102, 255, 0.7)', 'rgba(100, 255, 100, 0.7)'
+            ];
+            torresUnicas.forEach((torre, index) => {
+                coloresTorre[torre] = baseColores[index % baseColores.length];
+            });
+
+            new Chart(ctxUbicacion, {
+                type: 'bar',
+                data: {
+                    labels: ubicacionDetalladaData.labels, // Nombres de los módulos internos
+                    datasets: [{
+                        label: 'Nº Privados',
+                        data: ubicacionDetalladaData.values,
+                        backgroundColor: ubicacionDetalladaData.torres.map(torre => coloresTorre[torre] || 'rgba(200,200,200,0.7)'),
+                        borderColor: ubicacionDetalladaData.torres.map(torre => (coloresTorre[torre] || 'rgba(200,200,200,0.7)').replace('0.7', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Eje Y para las etiquetas (barra horizontal)
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: {
+                                autoSkip: false // Mostrar todas las etiquetas de módulos
+                            }
+                        },
+                        x: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Privados por Módulo (Agrupados por Torre)'
+                        },
+                        legend: {
+                            display: false // La leyenda por módulo sería muy larga, los colores distinguen torres
+                        },
+                        datalabels: {
+                            anchor: 'end', // Posición de la etiqueta
+                            align: 'right', // Alineación
+                            color: '#555', // Color
+                            font: { size: 10 },
+                            formatter: (value) => value // Mostrar solo el valor
+                        }
+                    }
+                }
+            });
+        } else {
+             showNoDataMessage('ubicacionChart', "No hay datos de ubicación");
+        }
+
+        // 4. Gráfico Delitos (Barra Horizontal)
+        const ctxDelitos = document.getElementById('delitosChart').getContext('2d');
+        const delitosData = chartData.delitos;
+        if (delitosData && delitosData.labels.length > 0) {
+            new Chart(ctxDelitos, {
+                type: 'bar',
+                data: {
+                    labels: delitosData.labels,
+                    datasets: [{
+                        label: 'Nº Casos',
+                        data: delitosData.values,
+                        backgroundColor: 'rgba(255, 193, 7, 0.8)', // Amarillo Bootstrap
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Delitos Más Comunes' // Título ajustado
+                        },
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'right',
+                            color: '#555',
+                            font: { size: 10 },
+                            formatter: (value) => value
+                        }
+                    },
+                    scales: { x: { beginAtZero: true } }
+                }
+            });
+        } else {
+            showNoDataMessage('delitosChart', "No hay datos de delitos");
+        }
+
+
+        // 5. Gráfico de Grupos de Edad (Barra Vertical)
+        const ctxEdadGrupos = document.getElementById('edadChart').getContext('2d');
+        const edadGruposData = chartData.edad_grupos;
+         if (edadGruposData && edadGruposData.labels.length > 0) {
+            new Chart(ctxEdadGrupos, {
+                type: 'bar',
+                data: {
+                    labels: edadGruposData.labels,
+                    datasets: [{
+                        label: 'Nº Privados',
+                        data: edadGruposData.values,
+                        backgroundColor: (context) => {
+                            const label = context.chart.data.labels[context.dataIndex];
+                            if (label === '70+') {
+                                return 'rgba(220, 53, 69, 0.8)'; // Rojo para 70+
+                            }
+                            return 'rgba(13, 110, 253, 0.8)'; // Azul por defecto para las demás
+                        },
+                        borderColor: (context) => { // Borde blanco para todas
+                            return '#fff';
+                        },
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Distribución por Grupo de Edad'
+                        },
+                         legend: {
+                            display: false
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#555',
+                            font: { size: 10 },
+                            formatter: (value) => value
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        } else {
+            showNoDataMessage('edadChart', "No hay datos de edad");
+        }
+
+        // 6. Gráfico Nacionalidad (Pie)
+        const ctxNacionalidad = document.getElementById('nacionalidadChart').getContext('2d');
+        const nacionalidadData = chartData.nacionalidad;
+        if (nacionalidadData && nacionalidadData.values.reduce((a, b) => a + b, 0) > 0) {
+            new Chart(ctxNacionalidad, {
+                type: 'pie',
+                data: {
+                    labels: nacionalidadData.labels,
+                    datasets: [{
+                        data: nacionalidadData.values,
+                        backgroundColor: [
+                            'rgba(255, 204, 0, 0.9)', // Amarillo (para Venezolanos)
+                            'rgba(201, 203, 207, 0.8)' // Gris (para Extranjeros)
+                        ],
+                        borderColor: ['#fff', 'rgba(150,150,150,1)'], // Borde blanco para Vzla (o sin borde), Gris oscuro para Ext
+                        borderWidth: [2, 1] // Borde normal para Vzla, o 0 si no quieres borde
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: { display: true, text: 'Distribución por Nacionalidad' },
+                        datalabels: {
+                            color: (context) => {
+                                // Para el amarillo de Venezolanos, usar texto oscuro
+                                if (context.dataIndex === 0) return '#333';
+                                // Para el gris de Extranjeros, usar texto oscuro
+                                if (context.dataIndex === 1) return '#333';
+                                return '#fff'; // Default blanco
+                            },
+                            font: { weight: 'bold' },
+                            formatter: (value, ctx) => {
+                                const datapoints = ctx.chart.data.datasets[0].data;
+                                const total = datapoints.reduce((total, datapoint) => total + datapoint, 0);
+                                const percentage = (value / total * 100).toFixed(1);
+                                // Mostrar valor y porcentaje
+                                return `${value}\n(${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            showNoDataMessage('nacionalidadChart', "No hay datos de nacionalidad");
+        }
+
+        // 7. Nuevo Gráfico: Distribución por Estado y Condición Jurídica (Barras Verticales Apiladas con Etiquetas Rotadas)
+        const ctxDistribucionEstado = document.getElementById('distribucionEstadoCondicionChart')?.getContext('2d');
+        const distribucionEstadoData = chartData.distribucion_estado_condicion;
+
+        if (ctxDistribucionEstado && distribucionEstadoData && distribucionEstadoData.labels.length > 0) {
+            new Chart(ctxDistribucionEstado, {
+                type: 'bar',
+                data: {
+                    labels: distribucionEstadoData.labels, // Nombres de los Circuitos Judiciales (Estados)
+                    datasets: [
+                        {
+                            label: 'Procesados',
+                            data: distribucionEstadoData.procesados,
+                            backgroundColor: 'rgba(0, 86, 179, 0.7)', // Azul
+                            borderColor: 'rgba(0, 86, 179, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Penados',
+                            data: distribucionEstadoData.penados,
+                            backgroundColor: 'rgba(255, 204, 0, 0.7)', // Amarillo
+                            borderColor: 'rgba(255, 204, 0, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    // indexAxis: 'y', // Quitar para volver a barras verticales (eje X para categorías)
+                    maintainAspectRatio: false, 
+                    scales: {
+                        x: { // Eje de categorías (estados)
+                            stacked: true, // Apilar en el eje de categorías
+                            ticks: {
+                                autoSkip: false, // Intentar mostrar todas las etiquetas
+                                maxRotation: 70, // Rotación máxima
+                                minRotation: 45,  // Rotación mínima
+                                font: { size: 9 } // Tamaño de fuente más pequeño para las etiquetas
+                            }
+                        },
+                        y: { beginAtZero: true, stacked: true } // Apilar en el eje de valores
+                    },
+                    plugins: {
+                        title: { display: true, text: 'Población por Estado (Procesados y Penados)' },
+                        datalabels: { display: false } // Desactivar para barras verticales con muchas categorías, puede ser muy denso
+                    }
+                }
+            });
+        } else if (ctxDistribucionEstado) { // Asegurarse de que el canvas exista antes de mostrar mensaje
+            showNoDataMessage('distribucionEstadoCondicionChart', "No hay datos de distribución por estado.");
+        }
+
+    </script>
+{% endblock %}

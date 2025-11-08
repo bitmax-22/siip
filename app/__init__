@@ -1,0 +1,91 @@
+# c:\Users\Equipo z\Desktop\SIIP\app\__init__.py
+import os
+import time
+from flask import Flask, session # Import session here if needed by decorators in blueprints
+from werkzeug.security import generate_password_hash
+import google.generativeai as genai
+import datetime # Importar datetime
+
+from config import Config # Importar configuración
+from .extensions import db # Importar solo db aquí, gemini_model se maneja en config
+from .models import User # Importar modelos
+from .data_loader import cargar_datos_google_sheet # Importar cargador de datos
+from .legal_rag_service import LegalRAGService # Importar el nuevo servicio RAG
+
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+
+    # Inicializar extensiones
+    db.init_app(app)
+
+    # Configurar Gemini
+    try:
+        if not app.config['GOOGLE_API_KEY']:
+            print("Advertencia: La variable de entorno GOOGLE_API_KEY no está configurada.")
+            # No establecer gemini_model aquí, se hará referencia desde extensions
+        else:
+            genai.configure(api_key=app.config['GOOGLE_API_KEY'])
+            # Acceder a la variable global gemini_model desde extensions
+            from .extensions import gemini_model as gemini_model_global
+            gemini_model_global = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+            app.config['GEMINI_MODEL'] = gemini_model_global # Guardar referencia en config si es necesario
+            print("Gemini configurado exitosamente.")
+    except Exception as e:
+        print(f"Error configurando Gemini: {e}.")
+        # app.config['GEMINI_MODEL'] = None # No es necesario si se accede desde extensions
+
+    # Inicializar el servicio RAG Legal
+    # Esto se hará una vez cuando la aplicación se inicie.
+    # La ingesta de documentos puede tomar tiempo si hay muchos.
+    try:
+        with app.app_context(): # Asegurar que estamos en el contexto de la aplicación
+            app.legal_rag_service = LegalRAGService(app.config)
+            print("Servicio Legal RAG inicializado.")
+    except Exception as e:
+        print(f"Error inicializando LegalRAGService: {e}")
+        app.legal_rag_service = None
+
+    # Cargar datos SIIP y guardarlos en la configuración de la app
+    # Usar app.app_context() para acceder a current_app.config dentro de la función
+    with app.app_context():
+        datos_siip = cargar_datos_google_sheet()
+        app.config['DATOS_SIIP'] = datos_siip
+        if datos_siip is not None:
+            print(f"Se cargaron {len(datos_siip)} filas desde Google Sheet y se guardaron en app.config.")
+            # Guardar reporte CSV (opcional)
+            try:
+                timestamp = time.strftime("%Y%m%d-%H%M%S")
+                report_filename = f"datos_cargados_{timestamp}.csv"
+                report_filepath = os.path.join(app.config['REPORTS_FOLDER'], report_filename)
+                datos_siip.to_csv(report_filepath, index=False, encoding='utf-8-sig')
+                print(f"INFO: Se guardó un reporte de los datos cargados en: {report_filepath}")
+            except Exception as e:
+                print(f"ADVERTENCIA: No se pudo guardar el reporte CSV de datos cargados: {e}")
+
+    # Registrar Blueprints
+    from .auth import bp as auth_bp
+    app.register_blueprint(auth_bp)
+
+    from .chat import chat_bp # Import the main chat blueprint from app.chat package
+    app.register_blueprint(chat_bp) # Register it
+
+    # La creación del admin se puede mover a un comando CLI o mantener aquí
+    # Si se mantiene aquí, asegurarse que db.create_all() se llame antes
+    with app.app_context():
+        db.create_all() # Asegurarse que las tablas existan
+        if not User.query.filter_by(username='admin').first():
+            hashed_password = generate_password_hash('2308')
+            new_admin = User(username='admin', password_hash=hashed_password, is_admin=True)
+            db.session.add(new_admin)
+            db.session.commit()
+            print("Usuario 'admin' creado.")
+
+    # Context processor para inyectar variables globales a las plantillas
+    @app.context_processor
+    def inject_now():
+        return {'now_year': datetime.datetime.now().year}
+        # Si prefieres pasar la función para llamarla como now_year() en la plantilla:
+        # return {'now_year': lambda: datetime.datetime.now().year}
+
+    return app

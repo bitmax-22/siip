@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}SIIP - Detalles de Funcionario{% endblock %}
+
+{% block styles %}
+    {{ super() }}
+    <style>
+        .main-container {
+            padding-top: 76px;
+            padding-bottom: 40px;
+            background-image: linear-gradient(to right, #4b6cb7, #182848);
+            color: #e0e0e0;
+            min-height: calc(100vh - 56px);
+        }
+        .details-card {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            border-radius: 15px;
+        }
+        .details-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 1.5rem;
+        }
+        .profile-pic {
+            width: 150px;
+            height: 150px;
+            border-radius: 8px; /* Formato cuadrado con bordes redondeados */
+            object-fit: cover; /* Evita que la imagen se estire */
+            margin-right: 2rem;
+            border: 3px solid #a0c4ff;
+            background-color: #333;
+        }
+        .details-section h5 {
+            color: #a0c4ff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .detail-item strong {
+            color: #a0c4ff;
+        }
+        /* Estilos para campos de texto largos (dirección, observaciones) */
+        .detail-item-block {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .detail-item-block strong {
+            color: #a0c4ff;
+        }
+        .detail-item-block p {
+            padding-top: 0.25rem;
+            color: #e0e0e0;
+        }
+        /* Estilos para vista móvil */
+        @media (max-width: 767.98px) {
+            .details-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .profile-pic {
+                margin-right: 0;
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid main-container">
+    <div class="container">
+        <div class="details-card">
+            <div class="details-header">
+                {% if funcionario.foto_path %}
+                    <img src="{{ url_for('static', filename='fotos_funcionarios/' + funcionario.foto_path) }}" alt="Foto de perfil" class="profile-pic">
+                {% else %}
+                    <img src="{{ url_for('static', filename='resources/default_avatar.png') }}" alt="Foto de perfil" class="profile-pic">
+                {% endif %}
+                <div>
+                    <h2 class="mb-0">{{ funcionario.nombres }} {{ funcionario.apellidos }}</h2>
+                    <p class="lead text-muted">{{ funcionario.cargo_adscripcion }}</p>
+                </div>
+                <div class="ms-auto mt-3 mt-md-0">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        {% set back_url = url_for('rrhh.listar_administrativos') if funcionario.tipo_personal == 'Administrativo' else url_for('rrhh.listar_seguridad_custodia') %}
+                        <a href="{{ back_url }}" class="btn btn-outline-light"><i class="fas fa-arrow-left"></i> Volver a la Lista</a>
+                        <a href="{{ url_for('rrhh.editar_funcionario', funcionario_id=funcionario.id) }}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar Datos</a>
+                        <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#estatusModal-{{ funcionario.id }}">
+                            <i class="fas fa-exchange-alt"></i> Cambiar Estatus
+                        </button>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#eliminarFuncionarioModal-{{ funcionario.id }}">
+                            <i class="fas fa-trash-alt"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Información Personal</h5>
+                        <div class="detail-item"><span><strong>Cédula:</strong></span> <span>{{ funcionario.cedula }}</span></div>
+                        <div class="detail-item"><span><strong>Sexo:</strong></span> <span>{{ 'Masculino' if funcionario.sexo == 'M' else 'Femenino' }}</span></div>
+                        <div class="detail-item"><span><strong>Fecha de Nacimiento:</strong></span> <span>{{ funcionario.fecha_nacimiento.strftime('%d/%m/%Y') if funcionario.fecha_nacimiento else 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Edad:</strong></span> <span>{{ edad ~ ' años' if edad is not none else 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Teléfono:</strong></span> <span>{{ funcionario.telefono or 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Correo:</strong></span> <span>{{ funcionario.correo_electronico or 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Estado de Residencia:</strong></span> <span>{{ funcionario.estado_residencia or 'N/A' }}</span></div>
+                        <div class="detail-item-block">
+                            <strong>Dirección:</strong>
+                            <p class="mb-0">{{ funcionario.direccion_habitacion or 'N/A' }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Información Laboral</h5>
+                        <div class="detail-item"><span><strong>Tipo de Personal:</strong></span> <span>{{ funcionario.tipo_personal }}</span></div>
+                        <div class="detail-item"><span><strong>Establecimiento:</strong></span> <span>{{ funcionario.nombre_establecimiento or 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Cargo Funcional:</strong></span> <span>{{ funcionario.cargo_funcional or 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Fecha de Ingreso (MPPSP):</strong></span> <span>{{ funcionario.fecha_ingreso_mppsp.strftime('%d/%m/%Y') if funcionario.fecha_ingreso_mppsp else 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Años de Servicio:</strong></span> <span>{{ (funcionario.anos_servicio ~ ' años') if funcionario.anos_servicio is not none else 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Grado de Instrucción:</strong></span> <span>{{ funcionario.grado_instruccion or 'N/A' }}</span></div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5>Tallas y Datos de Pago</h5>
+                        <div class="detail-item"><span><strong>Camisa / Pantalón / Zapatos:</strong></span> <span>{{ funcionario.talla_camisa or 'N/A' }} / {{ funcionario.talla_pantalon or 'N/A' }} / {{ funcionario.talla_zapatos or 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Nº de Cuenta:</strong></span> <span>{{ funcionario.numero_cuenta or 'N/A' }}</span></div>
+                        <div class="detail-item"><span><strong>Pago Móvil:</strong></span> <span>{{ funcionario.pago_movil_banco or 'N/A' }} - C.I. {{ funcionario.pago_movil_cedula or 'N/A' }} - {{ funcionario.pago_movil_telefono or 'N/A' }}</span></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Estatus Actual</h5>
+                        {% set status_colors = {
+                            'Activo': 'bg-success',
+                            'De Reposo': 'bg-info',
+                            'De Permiso': 'bg-warning text-dark',
+                            'Retardo': 'bg-warning text-dark',
+                            'Jubilado': 'bg-secondary',
+                            'Egresado': 'bg-danger',
+                            'Pasivo': 'bg-dark'
+                        } %}
+                        <div class="detail-item">
+                            <span><strong>Estatus:</strong></span>
+                            <span>
+                                <span class="badge fs-6 me-2 {{ status_colors.get(funcionario.estatus_actual, 'bg-light text-dark') }}">
+                                    {{ funcionario.estatus_actual }}
+                                </span>
+                                {% if funcionario.estatus_actual == 'De Reposo' %}
+                                <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#verRepososModal-{{ funcionario.id }}" title="Ver Reposos">
+                                    <i class="fas fa-file-medical"></i> Ver
+                                </button>
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if not usuario_existente %}
+                            <div class="detail-item">
+                                <span><strong>Usuario SIIP:</strong></span>
+                                <span>
+                                    <a href="#" class="btn btn-sm btn-success"><i class="fas fa-user-plus"></i> Crear Usuario</a>
+                                </span>
+                            </div>
+                        {% endif %}
+                        <div class="detail-item-block">
+                            <strong>Observaciones:</strong>
+                            <p class="mb-0">{{ funcionario.observaciones_estatus or 'Ninguna' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if funcionario.estatus_actual == 'De Reposo' %}
+            <div class="details-section">
+                <h5><i class="fas fa-file-medical-alt"></i> Documentos de Reposo</h5>
+                <div class="row">
+                    <div class="col-md-7">
+                        <h6>Documentos Cargados</h6>
+                        {% if reposos %}
+                            <ul class="list-group list-group-flush">
+                            {% for reposo in reposos %}
+                                <li class="list-group-item bg-transparent text-white d-flex justify-content-between align-items-center ps-0">
+                                    <a href="{{ url_for('static', filename='reposos_funcionarios/' + reposo.file_path) }}" target="_blank"><i class="fas fa-file-alt"></i> {{ reposo.descripcion or reposo.file_path }}</a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#eliminarReposoModal-{{ reposo.id }}"><i class="fas fa-trash-alt"></i></button>
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>No hay documentos de reposo cargados.</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-5">
+                        <h6>Cargar Nuevo Documento</h6>
+                        <form action="{{ url_for('rrhh.cargar_reposo', funcionario_id=funcionario.id) }}" method="POST" enctype="multipart/form-data">
+                            {{ reposo_form.hidden_tag() }}
+                            
+                            {{ reposo_form.reposo_file(id="reposo_file_input-" ~ funcionario.id, style="display: none;", class="form-control form-control-sm") }}
+                            <label for="reposo_file_input-{{ funcionario.id }}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                                <i class="fas fa-folder-open"></i> Seleccionar documento...
+                            </label>
+                            <p class="text-center mb-2"><small id="reposo-file-name-{{ funcionario.id }}" class="text-muted">Ningún archivo seleccionado</small></p>
+
+                            <div class="mb-2">{{ reposo_form.descripcion(class="form-control form-control-sm", rows="2", placeholder="Descripción (ej: Reposo por fractura)") }}</div>
+                            <div>{{ reposo_form.submit(class="btn btn-primary btn-sm w-100") }}</div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Incluir los modales para este funcionario -->
+{% include '_modals.html' %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reposoFileInput = document.getElementById('reposo_file_input-{{ funcionario.id }}');
+    if (reposoFileInput) {
+        const reposoFileNameDisplay = document.getElementById('reposo-file-name-{{ funcionario.id }}');
+        reposoFileInput.addEventListener('change', function() {
+            reposoFileNameDisplay.textContent = reposoFileInput.files.length > 0 ? reposoFileInput.files[0].name : 'Ningún archivo seleccionado';
+        });
+    }
+});
+</script>
+{% endblock %}

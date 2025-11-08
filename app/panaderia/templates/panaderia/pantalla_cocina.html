@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block styles %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .pantalla-cocina {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .mensaje-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        animation: slideIn 0.5s ease-out;
+        border-left: 5px solid;
+    }
+    
+    .mensaje-card.normal {
+        border-left-color: #17a2b8;
+    }
+    
+    .mensaje-card.alta {
+        border-left-color: #ffc107;
+        background: #fff8e1;
+    }
+    
+    .mensaje-card.urgente {
+        border-left-color: #dc3545;
+        background: #ffebee;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        50% {
+            box-shadow: 0 10px 40px rgba(220, 53, 69, 0.6);
+        }
+    }
+    
+    .mensaje-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .mensaje-texto {
+        font-size: 1.3em;
+        line-height: 1.6;
+        color: #333;
+    }
+    
+    .mensaje-fecha {
+        font-size: 0.9em;
+        color: #666;
+    }
+    
+    .badge-prioridad {
+        font-size: 1em;
+        padding: 8px 15px;
+    }
+    
+    .titulo-pantalla {
+        text-align: center;
+        color: white;
+        margin-bottom: 30px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .sin-mensajes {
+        text-align: center;
+        color: white;
+        font-size: 1.5em;
+        padding: 50px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pantalla-cocina">
+    <div class="titulo-pantalla">
+        <h1><i class="fas fa-utensils"></i> Pantalla de Cocina</h1>
+        <p class="lead">Mensajes en tiempo real</p>
+    </div>
+    
+    <div id="contenedorMensajes">
+        <div class="sin-mensajes">
+            <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+            <p>Cargando mensajes...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function cargarMensajes() {
+    fetch('/panaderia/api/listar_mensajes_cocina?limit=10')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarMensajes(data.mensajes);
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando mensajes:', error);
+        });
+}
+
+function mostrarMensajes(mensajes) {
+    const contenedor = document.getElementById('contenedorMensajes');
+    
+    if (mensajes.length === 0) {
+        contenedor.innerHTML = `
+            <div class="sin-mensajes">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p>No hay mensajes en este momento</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    mensajes.forEach(msg => {
+        const fecha = new Date(msg.fecha_creacion).toLocaleString('es-VE');
+        let badgeColor = 'info';
+        let icono = 'fa-info-circle';
+        
+        if (msg.prioridad === 'alta') {
+            badgeColor = 'warning';
+            icono = 'fa-exclamation-triangle';
+        } else if (msg.prioridad === 'urgente') {
+            badgeColor = 'danger';
+            icono = 'fa-exclamation-circle';
+        }
+        
+        html += `
+            <div class="mensaje-card ${msg.prioridad}">
+                <div class="mensaje-header">
+                    <span class="badge bg-${badgeColor} badge-prioridad">
+                        <i class="fas ${icono}"></i> ${msg.prioridad.toUpperCase()}
+                    </span>
+                    <span class="mensaje-fecha">${fecha}</span>
+                </div>
+                <div class="mensaje-texto">${msg.mensaje}</div>
+                <div class="mensaje-fecha mt-2">
+                    <small>Enviado por: ${msg.usuario}</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    contenedor.innerHTML = html;
+}
+
+// Cargar mensajes al iniciar
+cargarMensajes();
+
+// Recargar cada 5 segundos
+setInterval(cargarMensajes, 5000);
+</script>
+{% endblock %}
+
+

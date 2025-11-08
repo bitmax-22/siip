@@ -1,0 +1,619 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+    
+    <!-- Filtros de Búsqueda -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Filtros de Búsqueda</h5>
+        </div>
+        <div class="card-body">
+            <form id="formFiltros">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="tipoReporte" class="form-label">Tipo de Reporte</label>
+                        <select id="tipoReporte" class="form-select">
+                            <option value="vendedor">Por Cliente</option>
+                            <option value="producto">Por Producto</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                        <input type="date" id="fechaInicio" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fechaFin" class="form-label">Fecha Fin</label>
+                        <input type="date" id="fechaFin" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filtroEstado" class="form-label">Estado</label>
+                        <select id="filtroEstado" class="form-select">
+                            <option value="CONFIRMADO">Confirmados</option>
+                            <option value="ENTREGADO_PAGADO">Pagados (Ventas)</option>
+                            <option value="ENTREGADO_NO_PAGADO">No Pagados (Cobranza)</option>
+                            <option value="TODOS_ENTREGADOS">Todos Entregados</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary" id="btnGenerar">
+                            <i class="fas fa-search"></i> Generar Reporte
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label for="filtroClientes" class="form-label">Clientes</label>
+                        <select id="filtroClientes" class="form-select" multiple style="height: 120px;">
+                            <option value="">Todos los clientes</option>
+                            <!-- Se llenará con JS -->
+                        </select>
+                        <small class="text-muted">Mantén presionado Ctrl para seleccionar múltiples</small>
+                    </div>
+                    <div class="col-md-6" id="divFiltroProductos" style="display: none;">
+                        <label for="filtroProductos" class="form-label">Productos</label>
+                        <select id="filtroProductos" class="form-select" multiple style="height: 120px;">
+                            <option value="">Todos los productos</option>
+                            <!-- Se llenará con JS -->
+                        </select>
+                        <small class="text-muted">Mantén presionado Ctrl para seleccionar múltiples</small>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Resultados -->
+    <div class="card shadow-sm" id="cardResultados" style="display: none;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Resultados del Reporte</h5>
+            <button class="btn btn-success" id="btnImprimir">
+                <i class="fas fa-print"></i> Imprimir Reporte (80mm)
+            </button>
+        </div>
+        <div class="card-body">
+            <div id="resultadosReporte">
+                <!-- Se llenará con JS -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sección de Mensajes a Cocina -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="fas fa-utensils"></i> Mensajes a Cocina
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Enviar Mensaje</h6>
+                    <form id="formMensajeCocina">
+                        <div class="mb-3">
+                            <label for="mensajeTexto" class="form-label">Mensaje:</label>
+                            <textarea class="form-control" id="mensajeTexto" rows="4" placeholder="Escriba el mensaje para la cocina..." required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prioridadMensaje" class="form-label">Prioridad:</label>
+                            <select class="form-select" id="prioridadMensaje">
+                                <option value="normal">Normal</option>
+                                <option value="alta">Alta</option>
+                                <option value="urgente">Urgente</option>
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-paper-plane"></i> Enviar a Cocina
+                            </button>
+                            <button type="button" class="btn btn-success" id="btnImprimirMensaje" disabled>
+                                <i class="fas fa-print"></i> Imprimir Mensaje
+                            </button>
+                            <a href="/panaderia/pantalla_cocina" target="_blank" class="btn btn-info">
+                                <i class="fas fa-tv"></i> Ver Pantalla Cocina
+                            </a>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <h6>Últimos Mensajes</h6>
+                    <div id="listaMensajes" style="max-height: 300px; overflow-y: auto;">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando mensajes...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let datosReporteActual = null;
+let tipoReporteActual = null;
+let fechaInicioActual = '';
+let fechaFinActual = '';
+let filtroEstadoActual = '';
+
+// Función para formatear números con separadores de miles
+function formatearMonto(monto) {
+    return parseFloat(monto).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Función para formatear cantidades enteras con separadores de miles
+function formatearCantidad(cantidad) {
+    return parseInt(cantidad).toLocaleString();
+}
+
+$(document).ready(function() {
+    // Establecer fecha del día como valor por defecto (usando hora local, no UTC)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const fechaHoy = `${year}-${month}-${day}`;
+    $('#fechaInicio').val(fechaHoy);
+    $('#fechaFin').val(fechaHoy);
+    
+    // Cargar clientes disponibles
+    cargarClientes();
+    
+    // Cargar productos disponibles
+    cargarProductos();
+    
+    // Cambiar tipo de reporte
+    $('#tipoReporte').on('change', function() {
+        if ($(this).val() === 'producto') {
+            $('#divFiltroProductos').show();
+        } else {
+            $('#divFiltroProductos').hide();
+        }
+    });
+    
+    // Generar reporte
+    $('#formFiltros').on('submit', function(e) {
+        e.preventDefault();
+        generarReporte();
+    });
+    
+    // Imprimir reporte
+    $('#btnImprimir').on('click', function() {
+        if (datosReporteActual) {
+            imprimirReporte();
+        }
+    });
+});
+
+function cargarClientes() {
+    fetch('/panaderia/api/clientes_disponibles')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = $('#filtroClientes');
+                data.clientes.forEach(cliente => {
+                    select.append(`<option value="${cliente.id}">${cliente.nombre}</option>`);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando clientes:', error);
+        });
+}
+
+function cargarProductos() {
+    fetch('/panaderia/api/productos_disponibles')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = $('#filtroProductos');
+                data.productos.forEach(producto => {
+                    select.append(`<option value="${producto.id}">${producto.nombre}</option>`);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando productos:', error);
+        });
+}
+
+function generarReporte() {
+    const tipoReporte = $('#tipoReporte').val();
+    const fechaInicio = $('#fechaInicio').val();
+    const fechaFin = $('#fechaFin').val();
+    const filtroEstado = $('#filtroEstado').val();
+    
+    // Obtener clientes seleccionados
+    const clientes = [];
+    $('#filtroClientes option:selected').each(function() {
+        if ($(this).val()) {
+            clientes.push(parseInt($(this).val()));
+        }
+    });
+    
+    // Obtener productos seleccionados (solo si es reporte por producto)
+    const productos = [];
+    if (tipoReporte === 'producto') {
+        $('#filtroProductos option:selected').each(function() {
+            if ($(this).val()) {
+                productos.push(parseInt($(this).val()));
+            }
+        });
+    }
+    
+    // Preparar datos
+    const datos = {
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        filtro_estado: filtroEstado,
+        clientes: clientes.length > 0 ? clientes : [],
+        productos: productos.length > 0 ? productos : []
+    };
+    
+    // Determinar endpoint
+    const endpoint = tipoReporte === 'vendedor' 
+        ? '/panaderia/api/reporte_por_vendedor'
+        : '/panaderia/api/reporte_por_producto';
+    
+    // Mostrar carga
+    $('#btnGenerar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generando...');
+    
+    // Hacer petición
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        $('#btnGenerar').prop('disabled', false).html('<i class="fas fa-search"></i> Generar Reporte');
+        
+        if (data.success) {
+            mostrarResultados(data, tipoReporte, fechaInicio, fechaFin, filtroEstado);
+        } else {
+            mostrarError(data.error || 'Error al generar reporte');
+        }
+    })
+    .catch(error => {
+        $('#btnGenerar').prop('disabled', false).html('<i class="fas fa-search"></i> Generar Reporte');
+        console.error('Error generando reporte:', error);
+        mostrarError('Error al generar reporte. Intenta de nuevo.');
+    });
+}
+
+function mostrarResultados(data, tipoReporte, fechaInicio, fechaFin, filtroEstado) {
+    datosReporteActual = data.reporte;
+    tipoReporteActual = tipoReporte;
+    fechaInicioActual = fechaInicio;
+    fechaFinActual = fechaFin;
+    filtroEstadoActual = filtroEstado;
+    
+    let html = '';
+    
+    // Determinar título según el filtro
+    let titulo = '';
+    if (filtroEstado === 'ENTREGADO_PAGADO') {
+        titulo = tipoReporte === 'vendedor' ? 'Ventas por Cliente' : 'Ventas por Producto';
+    } else if (filtroEstado === 'ENTREGADO_NO_PAGADO') {
+        titulo = tipoReporte === 'vendedor' ? 'Cobranzas por Cliente' : 'Cobranzas por Producto';
+    } else {
+        titulo = tipoReporte === 'vendedor' ? 'Reporte por Cliente' : 'Reporte por Producto';
+    }
+    
+    // Encabezado
+    html += `<h6>Tipo: <strong>${titulo}</strong></h6>`;
+    
+    if (fechaInicio || fechaFin) {
+        html += `<p class="text-muted">Periodo: ${fechaInicio || 'Inicio'} - ${fechaFin || 'Fin'}</p>`;
+    }
+    
+    // Tabla de resultados
+    html += '<div class="table-responsive mt-3">';
+    html += '<table class="table table-striped table-hover">';
+    
+    if (tipoReporte === 'vendedor') {
+        html += '<thead class="table-dark">';
+        html += '<tr>';
+        html += '<th>#</th>';
+        html += '<th>Cliente</th>';
+        html += '<th class="text-end">Pedidos</th>';
+        html += '<th class="text-end">Items</th>';
+        html += '<th class="text-end">Total Ventas</th>';
+        html += '</tr>';
+        html += '</thead>';
+        html += '<tbody>';
+        
+        data.reporte.forEach((item, idx) => {
+            html += '<tr>';
+            html += `<td>${idx + 1}</td>`;
+            html += `<td><strong>${item.nombre}</strong></td>`;
+            html += `<td class="text-end">${formatearCantidad(item.cantidad_pedidos)}</td>`;
+            html += `<td class="text-end">${formatearCantidad(item.total_items)}</td>`;
+            html += `<td class="text-end"><strong>${formatearMonto(item.total_ventas)} Bs.</strong></td>`;
+            html += '</tr>';
+        });
+        
+        html += '</tbody>';
+        html += '<tfoot class="table-dark">';
+        html += '<tr>';
+        html += '<th colspan="2">TOTAL GENERAL</th>';
+        html += `<th class="text-end">${formatearCantidad(data.pedidos_generales)}</th>`;
+        html += '<th>-</th>';
+        html += `<th class="text-end">${formatearMonto(data.total_general)} Bs.</th>`;
+        html += '</tr>';
+        // Agregar línea de estado si es cobranza
+        if (filtroEstado === 'ENTREGADO_NO_PAGADO') {
+            html += '<tr>';
+            html += '<td colspan="5" class="text-center"><strong class="text-warning">⚠️ NO COBRADO</strong></td>';
+            html += '</tr>';
+        }
+        html += '</tfoot>';
+    } else {
+        html += '<thead class="table-dark">';
+        html += '<tr>';
+        html += '<th>#</th>';
+        html += '<th>Producto</th>';
+        html += '<th class="text-end">Cantidad</th>';
+        html += '<th class="text-end">Pedidos</th>';
+        html += '<th class="text-end">Total Ventas</th>';
+        html += '</tr>';
+        html += '</thead>';
+        html += '<tbody>';
+        
+        data.reporte.forEach((item, idx) => {
+            html += '<tr>';
+            html += `<td>${idx + 1}</td>`;
+            html += `<td><strong>${item.nombre}</strong></td>`;
+            html += `<td class="text-end">${formatearCantidad(item.cantidad_total)}</td>`;
+            html += `<td class="text-end">${formatearCantidad(item.pedidos_distintos)}</td>`;
+            html += `<td class="text-end"><strong>${formatearMonto(item.total_ventas)} Bs.</strong></td>`;
+            html += '</tr>';
+        });
+        
+        html += '</tbody>';
+        html += '<tfoot class="table-dark">';
+        html += '<tr>';
+        html += '<th colspan="2">TOTAL GENERAL</th>';
+        html += `<th class="text-end">${formatearCantidad(data.productos_vendidos)}</th>`;
+        html += '<th>-</th>';
+        html += `<th class="text-end">${formatearMonto(data.total_general)} Bs.</th>`;
+        html += '</tr>';
+        // Agregar línea de estado si es cobranza
+        if (filtroEstado === 'ENTREGADO_NO_PAGADO') {
+            html += '<tr>';
+            html += '<td colspan="5" class="text-center"><strong class="text-warning">⚠️ NO COBRADO</strong></td>';
+            html += '</tr>';
+        }
+        html += '</tfoot>';
+    }
+    
+    html += '</table>';
+    html += '</div>';
+    
+    // Mostrar en div de resultados
+    $('#resultadosReporte').html(html);
+    $('#cardResultados').slideDown();
+}
+
+function imprimirReporte() {
+    if (!datosReporteActual) return;
+    
+    // Preparar datos para impresión
+    const datos = {
+        tipo: tipoReporteActual,
+        reporte: datosReporteActual,
+        total_general: datosReporteActual.reduce((sum, item) => sum + item.total_ventas, 0),
+        fecha_inicio: fechaInicioActual,
+        fecha_fin: fechaFinActual,
+        filtro_estado: filtroEstadoActual
+    };
+    
+    // Deshabilitar botón
+    $('#btnImprimir').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Imprimiendo...');
+    
+    // Hacer petición
+    fetch('/panaderia/api/imprimir_reporte_80mm', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        $('#btnImprimir').prop('disabled', false).html('<i class="fas fa-print"></i> Imprimir Reporte (80mm)');
+        
+        if (data.success) {
+            mostrarExito('Reporte impreso exitosamente en impresora térmica');
+        } else {
+            mostrarError(data.message || data.error || 'Error al imprimir reporte');
+        }
+    })
+    .catch(error => {
+        $('#btnImprimir').prop('disabled', false).html('<i class="fas fa-print"></i> Imprimir Reporte (80mm)');
+        console.error('Error imprimiendo reporte:', error);
+        mostrarError('Error al imprimir reporte. Verifica la conexión con la impresora.');
+    });
+}
+
+function mostrarError(mensaje) {
+    const html = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle"></i> ${mensaje}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+    $('#cardResultados').before(html);
+}
+
+function mostrarExito(mensaje) {
+    const html = `<div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> ${mensaje}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+    $('#cardResultados').before(html);
+}
+
+// Variables para mensajes a cocina
+let mensajeActual = null;
+
+// Cargar mensajes al iniciar
+$(document).ready(function() {
+    cargarMensajesCocina();
+    
+    // Enviar mensaje
+    $('#formMensajeCocina').on('submit', function(e) {
+        e.preventDefault();
+        enviarMensajeCocina();
+    });
+    
+    // Imprimir mensaje seleccionado
+    $('#btnImprimirMensaje').on('click', function() {
+        if (mensajeActual) {
+            imprimirMensajeCocina(mensajeActual.id);
+        }
+    });
+    
+    // Recargar mensajes cada 10 segundos
+    setInterval(cargarMensajesCocina, 10000);
+});
+
+function enviarMensajeCocina() {
+    const texto = $('#mensajeTexto').val().trim();
+    const prioridad = $('#prioridadMensaje').val();
+    
+    if (!texto) {
+        mostrarError('Por favor escriba un mensaje');
+        return;
+    }
+    
+    const btnEnviar = $('#formMensajeCocina button[type="submit"]');
+    btnEnviar.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
+    
+    fetch('/panaderia/api/enviar_mensaje_cocina', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            mensaje: texto,
+            prioridad: prioridad
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        btnEnviar.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Enviar a Cocina');
+        
+        if (data.success) {
+            $('#mensajeTexto').val('');
+            mostrarExito('Mensaje enviado a la cocina exitosamente');
+            cargarMensajesCocina();
+            
+            // Si se configuró imprimir automáticamente
+            if (data.imprimir_automatico) {
+                setTimeout(() => {
+                    imprimirMensajeCocina(data.mensaje_id);
+                }, 500);
+            }
+        } else {
+            mostrarError(data.error || 'Error al enviar mensaje');
+        }
+    })
+    .catch(error => {
+        btnEnviar.prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Enviar a Cocina');
+        console.error('Error enviando mensaje:', error);
+        mostrarError('Error al enviar mensaje. Intenta de nuevo.');
+    });
+}
+
+function cargarMensajesCocina() {
+    fetch('/panaderia/api/listar_mensajes_cocina')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarListaMensajes(data.mensajes);
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando mensajes:', error);
+        });
+}
+
+function mostrarListaMensajes(mensajes) {
+    let html = '';
+    
+    if (mensajes.length === 0) {
+        html = '<div class="text-center text-muted"><p>No hay mensajes</p></div>';
+    } else {
+        mensajes.forEach((msg, idx) => {
+            const fecha = new Date(msg.fecha_creacion).toLocaleString('es-VE');
+            let badgeColor = 'secondary';
+            let icono = 'fa-info-circle';
+            
+            if (msg.prioridad === 'alta') {
+                badgeColor = 'warning';
+                icono = 'fa-exclamation-triangle';
+            } else if (msg.prioridad === 'urgente') {
+                badgeColor = 'danger';
+                icono = 'fa-exclamation-circle';
+            }
+            
+            html += `<div class="card mb-2 mensaje-item" data-id="${msg.id}" style="cursor: pointer;" onclick="seleccionarMensaje(${msg.id})">`;
+            html += `<div class="card-body p-2">`;
+            html += `<div class="d-flex justify-content-between align-items-start">`;
+            html += `<div class="flex-grow-1">`;
+            html += `<span class="badge bg-${badgeColor} me-2"><i class="fas ${icono}"></i> ${msg.prioridad.toUpperCase()}</span>`;
+            html += `<small class="text-muted">${fecha}</small>`;
+            html += `<p class="mb-0 mt-1">${msg.mensaje}</p>`;
+            html += `</div>`;
+            html += `<button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); imprimirMensajeCocina(${msg.id})" title="Imprimir">`;
+            html += `<i class="fas fa-print"></i></button>`;
+            html += `</div>`;
+            html += `</div>`;
+            html += `</div>`;
+        });
+    }
+    
+    $('#listaMensajes').html(html);
+}
+
+function seleccionarMensaje(id) {
+    mensajeActual = { id: id };
+    $('#btnImprimirMensaje').prop('disabled', false);
+    $('.mensaje-item').removeClass('border-primary');
+    $(`.mensaje-item[data-id="${id}"]`).addClass('border-primary border-2');
+}
+
+function imprimirMensajeCocina(mensajeId) {
+    $('#btnImprimirMensaje').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Imprimiendo...');
+    
+    fetch(`/panaderia/api/imprimir_mensaje_cocina/${mensajeId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        $('#btnImprimirMensaje').prop('disabled', false).html('<i class="fas fa-print"></i> Imprimir Mensaje');
+        
+        if (data.success) {
+            mostrarExito('Mensaje impreso exitosamente');
+        } else {
+            mostrarError(data.error || 'Error al imprimir mensaje');
+        }
+    })
+    .catch(error => {
+        $('#btnImprimirMensaje').prop('disabled', false).html('<i class="fas fa-print"></i> Imprimir Mensaje');
+        console.error('Error imprimiendo mensaje:', error);
+        mostrarError('Error al imprimir mensaje. Verifica la conexión con la impresora.');
+    });
+}
+</script>
+{% endblock %}
+

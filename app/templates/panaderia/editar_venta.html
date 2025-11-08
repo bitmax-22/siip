@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Venta - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-edit"></i> Editar Venta</h1>
+        <a href="{{ url_for('panaderia.ventas') }}" class="btn btn-secondary">Volver a Ventas</a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Editando Venta ID: {{ venta.id }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('panaderia.editar_venta', venta_id=venta.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.produccion_id.label(class="form-label") }}
+                    {{ form.produccion_id(class="form-control") }}
+                    {% if form.produccion_id.errors %}
+                        <div class="text-danger">{% for error in form.produccion_id.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.vendedor_id.label(class="form-label") }}
+                    {{ form.vendedor_id(class="form-control") }}
+                    {% if form.vendedor_id.errors %}
+                        <div class="text-danger">{% for error in form.vendedor_id.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.cantidad_vendida.label(class="form-label") }}
+                    {{ form.cantidad_vendida(class="form-control") }}
+                    {% if form.cantidad_vendida.errors %}
+                        <div class="text-danger">{% for error in form.cantidad_vendida.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.fecha_venta.label(class="form-label") }}
+                    {{ form.fecha_venta(class="form-control") }}
+                    {% if form.fecha_venta.errors %}
+                        <div class="text-danger">{% for error in form.fecha_venta.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

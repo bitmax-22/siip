@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - SIIP{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-5">
+    <h1 class="mb-4">{{ title }}</h1>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Registrar Producción Diaria</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('panaderia.produccion') }}">
+                {{ form.csrf_token }}
+                <div class="mb-3">
+                    {{ form.producto_id.label(class="form-label") }}
+                    {{ form.producto_id(class="form-select") }}
+                    {% if form.producto_id.errors %}
+                        <div class="text-danger">
+                            {% for error in form.producto_id.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.fecha_produccion.label(class="form-label") }}
+                    {{ form.fecha_produccion(class="form-control") }}
+                    {% if form.fecha_produccion.errors %}
+                        <div class="text-danger">
+                            {% for error in form.fecha_produccion.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.cantidad_producida.label(class="form-label") }}
+                    {{ form.cantidad_producida(class="form-control", type="number") }}
+                    {% if form.cantidad_producida.errors %}
+                        <div class="text-danger">
+                            {% for error in form.cantidad_producida.errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Historial de Producción</h5>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% if producciones %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Producto</th>
+                            <th>Fecha Producción</th>
+                            <th>Cantidad Producida</th>
+                            <th>Costo Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prod in producciones %}
+                        <tr>
+                            <td>{{ prod.id }}</td>
+                            <td>{{ prod.producto.nombre }}</td>
+                            <td>{{ prod.fecha_produccion.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ prod.cantidad_producida }}</td>
+                            <td>{{ "%.2f"|format(prod.costo_total_produccion) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No hay registros de producción aún.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

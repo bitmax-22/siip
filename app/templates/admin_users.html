@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Administrar Usuarios - SIIP{% endblock %}
+
+{% block styles %}
+    <style>
+        .admin-page-wrapper {
+            background-color: #f4f4f4; /* Fondo gris claro para la página de admin */
+            color: #333; /* Color de texto oscuro para contraste */
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding-top: 56px; /* Para la navbar fija de base.html */
+        }
+        .admin-container {
+            /* max-width: 800px; /* Ajustado a container de Bootstrap */
+            margin-top: 20px; /* Espacio desde el padding-top del wrapper */
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        /* Los estilos de tabla y formulario se manejarán con clases de Bootstrap */
+        .form-section h2, .user-list-section h2 {
+             margin-top: 0;
+             border-bottom: 1px solid #dee2e6;
+             padding-bottom: 10px;
+             margin-bottom: 20px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page-wrapper">
+    <div class="container admin-container"> {# Usamos .container de Bootstrap para centrar y limitar el ancho #}
+        <h1 class="mb-4">Administrar Usuarios</h1>
+        {# Los enlaces de navegación "Volver al Chat" y "Cerrar Sesión" ahora están en la navbar de base.html #}
+
+        {% include '_flash_messages.html' %} {# Usamos el template estándar para mensajes flash #}
+
+        <div class="card form-section mb-4">
+            <div class="card-header">
+                <h2>{{ 'Editar Usuario: ' ~ user_to_edit.username if user_to_edit else 'Crear Nuevo Usuario' }}</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('auth.edit_user', user_id=user_to_edit.id) if user_to_edit else url_for('auth.manage_users') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nombre de Usuario:</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user_to_edit.username if user_to_edit else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nombre_completo" class="form-label">Nombre Completo:</label>
+                        <input type="text" class="form-control" id="nombre_completo" name="nombre_completo" value="{{ user_to_edit.nombre_completo if user_to_edit else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cargo" class="form-label">Cargo:</label>
+                        <input type="text" class="form-control" id="cargo" name="cargo" value="{{ user_to_edit.cargo if user_to_edit and user_to_edit.cargo else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña:</label>
+                        <input type="password" class="form-control" id="password" name="password" {% if not user_to_edit %}required{% endif %} placeholder="{{ 'Dejar vacío para no cambiar' if user_to_edit else '' }}">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" {% if user_to_edit and user_to_edit.is_admin %}checked{% endif %}>
+                        <label class="form-check-label" for="is_admin"><strong>Es Administrador</strong></label>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">Permisos de Módulos</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="permiso_chat" name="permiso_chat" {% if user_to_edit and user_to_edit.permiso_chat %}checked{% endif %}>
+                                <label class="form-check-label" for="permiso_chat">Chat Asistente</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="permiso_dashboard" name="permiso_dashboard" {% if user_to_edit and user_to_edit.permiso_dashboard %}checked{% endif %}>
+                                <label class="form-check-label" for="permiso_dashboard">Situación Actual (Dashboard)</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="permiso_resena" name="permiso_resena" {% if user_to_edit and user_to_edit.permiso_resena %}checked{% endif %}>
+                                <label class="form-check-label" for="permiso_resena">Reseña Fotográfica</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="permiso_usuarios" name="permiso_usuarios" {% if user_to_edit and user_to_edit.permiso_usuarios %}checked{% endif %}>
+                                <label class="form-check-label" for="permiso_usuarios">Gestionar Usuarios</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="permiso_familiares" name="permiso_familiares" {% if user_to_edit and user_to_edit.permiso_familiares %}checked{% endif %}>
+                                <label class="form-check-label" for="permiso_familiares">Gestionar Familiares PDL</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="permiso_rrhh" name="permiso_rrhh" {% if user_to_edit and user_to_edit.permiso_rrhh %}checked{% endif %}>
+                                <label class="form-check-label" for="permiso_rrhh">Gestión RRHH</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="permiso_panaderia" name="permiso_panaderia" {% if user_to_edit and user_to_edit.permiso_panaderia %}checked{% endif %}>
+                                <label class="form-check-label" for="permiso_panaderia">Gestión Panadería</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions mt-4">
+                        <button type="submit" class="btn btn-primary">{{ 'Actualizar Usuario' if user_to_edit else 'Crear Usuario' }}</button>
+                        {% if user_to_edit %}
+                            <a href="{{ url_for('auth.manage_users') }}" class="btn btn-secondary">Cancelar Edición</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card user-list-section">
+            <div class="card-header">
+                <h2>Usuarios Existentes</h2>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre de Usuario</th>
+                                <th>Nombre Completo</th>
+                                <th>Es Admin</th>
+                                <th>Cargo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.nombre_completo if user.nombre_completo else '-' }}</td>
+                                <td>{{ 'Sí' if user.is_admin else 'No' }}</td>
+                                <td>{{ user.cargo if user.cargo else '-' }}</td>
+                                <td>
+                                    <a href="{{ url_for('auth.edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
