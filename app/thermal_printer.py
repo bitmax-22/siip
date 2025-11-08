@@ -7,7 +7,14 @@ import time
 from datetime import datetime
 from flask import current_app
 from fpdf import FPDF
-from .models import PedidoPanaderia, ItemPedidoPanaderia, ClientePanaderia, User, MensajeCocina
+from .models import (
+    PedidoPanaderia,
+    ItemPedidoPanaderia,
+    ClientePanaderia,
+    User,
+    MensajeCocina,
+    ProductoPanaderia,
+)
 from .extensions import db
 
 def generar_comanda_escpos(pedido_id):
@@ -382,6 +389,119 @@ def imprimir_reporte_escpos(tipo_reporte, reporte_data, total_general, fecha_ini
     comando.extend(b'\x1D\x56\x00')  # Corte parcial
     
     return bytes(comando)
+
+
+def _formatear_monto_bs(valor):
+    try:
+        cantidad = float(valor or 0)
+    except (TypeError, ValueError):
+        cantidad = 0.0
+    monto = f"{cantidad:,.2f}"
+    if '.' in monto:
+        parte_entera, parte_decimal = monto.split('.')
+        return f"Bs. {parte_entera.replace(',', '.')},{parte_decimal}"
+    return f"Bs. {monto.replace(',', '.')}"
+
+
+def _wrap_text(texto, ancho):
+    palabras = texto.split()
+    if not palabras:
+        return ['']
+    lineas = []
+    linea_actual = palabras[0]
+    for palabra in palabras[1:]:
+        if len(linea_actual) + 1 + len(palabra) <= ancho:
+            linea_actual += ' ' + palabra
+        else:
+            lineas.append(linea_actual)
+            linea_actual = palabra
+    lineas.append(linea_actual)
+    return lineas
+
+
+def generar_lista_precios_escpos(productos):
+    ancho_linea = 48
+    comando = bytearray()
+
+    comando.extend(b'\x1B\x40')  # Reset
+    comando.extend(b'\x1B\x61\x01')  # Centrar
+    comando.extend(b'\x1B\x21\x38')
+    comando.extend('LISTA DE PRECIOS\n'.encode('utf-8'))
+    comando.extend(b'\x1B\x21\x00')
+
+    comando.extend(('=' * ancho_linea + '\n').encode('utf-8'))
+    comando.extend(b'\x1B\x61\x00')
+    ahora = datetime.now().strftime('%d/%m/%Y %I:%M %p')
+    comando.extend(f'Emitido: {ahora}\n'.encode('utf-8'))
+    comando.extend(('-' * ancho_linea + '\n\n').encode('utf-8'))
+
+    for producto in productos:
+        nombre_lineas = _wrap_text(producto.nombre, ancho_linea)
+        for idx, linea in enumerate(nombre_lineas):
+            comando.extend(b'\x1B\x21\x08' if idx == 0 else b'\x1B\x21\x00')
+            comando.extend(f'{linea}\n'.encode('utf-8'))
+        comando.extend(b'\x1B\x21\x00')
+
+        regular = _formatear_monto_bs(producto.precio_regular)
+        minimo = _formatear_monto_bs(producto.precio_minimo)
+
+        comando.extend(f'   Precio regular: {regular}\n'.encode('utf-8'))
+        if producto.precio_minimo is not None and producto.precio_minimo != producto.precio_regular:
+            comando.extend(f'   Precio mínimo:  {minimo}\n'.encode('utf-8'))
+        comando.extend('\n'.encode('utf-8'))
+
+    comando.extend(('-' * ancho_linea + '\n').encode('utf-8'))
+    comando.extend(b'\x1B\x61\x01')
+    comando.extend('Precios sujetos a cambio.\n'.encode('utf-8'))
+    comando.extend(b'\x1B\x61\x00')
+
+    comando.extend('\n'.encode('utf-8'))
+    comando.extend('\n'.encode('utf-8'))
+    comando.extend('\n'.encode('utf-8'))
+    comando.extend(b'\x1D\x56\x00')  # Corte parcial
+
+    return bytes(comando)
+
+
+def imprimir_lista_precios(productos=None):
+    if not current_app.config.get('IMPRESORA_HABILITADA', False):
+        current_app.logger.info("Impresora deshabilitada en configuración")
+        return {
+            'success': False,
+            'skipped': True,
+            'message': 'Impresora deshabilitada'
+        }
+
+    if productos is None:
+        productos = ProductoPanaderia.query.order_by(ProductoPanaderia.nombre.asc()).all()
+
+    if not productos:
+        return {
+            'success': False,
+            'error': 'No hay productos registrados para imprimir.'
+        }
+
+    impresora_ip = current_app.config.get('IMPRESORA_IP', '192.168.1.100')
+    impresora_puerto = current_app.config.get('IMPRESORA_PUERTO', 9100)
+
+    try:
+        comando = generar_lista_precios_escpos(productos)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        current_app.logger.info(f"Imprimiendo lista de precios en {impresora_ip}:{impresora_puerto}")
+        sock.connect((impresora_ip, impresora_puerto))
+        sock.sendall(comando)
+        sock.close()
+        return {
+            'success': True,
+            'message': 'Lista de precios enviada a la impresora.'
+        }
+    except Exception as e:
+        current_app.logger.error(f"Error imprimiendo lista de precios: {e}", exc_info=True)
+        return {
+            'success': False,
+            'error': f'Error al imprimir: {str(e)}'
+        }
 
 
 def generar_comanda_pdf(pedido_id):

@@ -13,7 +13,7 @@ from app.panaderia.forms import (
     VentaDiariaForm, MovimientoVendedorForm
 )
 from app.panaderia import panaderia_bp # Import the blueprint
-from app.thermal_printer import imprimir_comanda
+from app.thermal_printer import imprimir_comanda, imprimir_lista_precios
 
 @panaderia_bp.route('/')
 @login_required
@@ -1078,6 +1078,25 @@ def api_imprimir_reporte_80mm():
     except Exception as e:
         current_app.logger.error(f"Error imprimiendo reporte: {e}", exc_info=True)
         return jsonify({'success': False, 'error': f'Error al imprimir: {str(e)}'}), 500
+
+
+@panaderia_bp.route('/api/imprimir_lista_precios', methods=['POST'])
+@login_required
+def api_imprimir_lista_precios():
+    try:
+        productos = ProductoPanaderia.query.order_by(ProductoPanaderia.nombre.asc()).all()
+        if not productos:
+            return jsonify({'success': False, 'error': 'No hay productos registrados para imprimir.'}), 400
+
+        resultado = imprimir_lista_precios(productos)
+        if resultado.get('success'):
+            return jsonify(resultado)
+
+        status_code = 200 if resultado.get('skipped') else 500
+        return jsonify(resultado), status_code
+    except Exception as e:
+        current_app.logger.error(f"Error imprimiendo lista de precios: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': f'Error al imprimir lista de precios: {str(e)}'}), 500
 
 # --- APIs para Mensajes a Cocina ---
 @panaderia_bp.route('/api/enviar_mensaje_cocina', methods=['POST'])
